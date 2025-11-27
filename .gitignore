@@ -1,0 +1,19 @@
+# === 無視するファイル一覧 ===
+
+# Dockerのデータベース永続化データ
+/docker/db-data
+/db-data
+
+# Composerのライブラリ（場所が変わったので修正）
+/src/vendor
+/vendor
+
+# 環境変数ファイル
+.env
+
+# OSのシステムファイル
+.DS_Store
+Thumbs.db
+
+# === 追記 ===
+*.pem

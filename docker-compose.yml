@@ -1,0 +1,41 @@
+services:
+  # Webサーバー (Nginx)
+  web:
+    image: nginx:alpine
+    ports:
+      - "8003:80" # ポートを 8001 に変更
+    volumes:
+      - .:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
+
+  # アプリケーション (PHP-FPM)
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    volumes:
+      - .:/var/www/html
+    environment:
+      DB_HOST: db_tools
+      DB_NAME: useful_tools_db
+      DB_USER: labo_user
+      DB_PASSWORD: password123
+
+  # データベース (MySQL)
+  db:
+    image: mysql:8.0
+    container_name: db_tools # コンテナ名を指定（Persona-Labと区別）
+    environment:
+      MYSQL_DATABASE: useful_tools_db
+      MYSQL_USER: labo_user
+      MYSQL_PASSWORD: password123
+      MYSQL_ROOT_PASSWORD: root_password
+    volumes:
+      - db-data-tools:/var/lib/mysql
+    ports:
+      - "3308:3306" # ポートを 3308 に変更
+
+volumes:
+  db-data-tools:
