@@ -1,13 +1,23 @@
-import UniversalConverter from "./components/Tools/UniversalConverter";
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Layout from './components/Layout/Layout';
+import UniversalConverter from './components/Tools/UniversalConverter';
+import Privacy from './components/Pages/Privacy';
+import GlobalSettings from './components/Pages/GlobalSettings';
+import Feedback from './components/Pages/Feedback';
 
 function App() {
   return (
-    <div className="min-h-screen bg-gray-100 py-10 px-4 font-sans">
-      {/* ヘッダーは UniversalConverter 内に組み込んだので、
-         App側はシンプルにコンテナとして機能させます 
-      */}
-      <UniversalConverter />
-    </div>
+    <Router>
+      <Layout>
+        <Routes>
+          {/* メインツール (ホーム) */}
+          <Route path="/" element={<UniversalConverter />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/settings" element={<GlobalSettings />} />
+          <Route path="/feedback" element={<Feedback />} /> {/* 追加 */}
+        </Routes>
+      </Layout>
+    </Router>
   );
 }
 

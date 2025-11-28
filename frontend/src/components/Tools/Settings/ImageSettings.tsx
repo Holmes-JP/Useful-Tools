@@ -1,4 +1,3 @@
-import React from 'react';
 import { ImageOptions } from '@/hooks/useImageConverter'; // 型をインポート
 
 type Props = {

@@ -1,5 +1,3 @@
-import React from 'react';
-
 // 設定値の型定義 (親コンポーネントと共有するためexport)
 export type VideoConfig = {
     format: 'mp4' | 'webm' | 'gif';
