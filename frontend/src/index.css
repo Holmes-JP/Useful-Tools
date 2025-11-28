@@ -1,3 +1,19 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ベーススタイルを追加 */
+body {
+  @apply bg-dark text-gray-200; /* 背景をdark、文字を薄いグレーに */
+}
+
+/* スクロールバーもダークにする (Chrome/Edge/Safari) */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-dark;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-700 rounded-full;
+}
