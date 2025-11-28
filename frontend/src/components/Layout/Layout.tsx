@@ -1,39 +1,29 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
     Wand2, 
     ShieldCheck, 
-    Settings, 
+    MessageSquarePlus, 
     Menu, 
-    X, 
-    Github,
-    MessageSquarePlus // 追加
+    X 
 } from 'lucide-react';
 import clsx from 'clsx';
-import { useState } from 'react';
-
-
-
-
 
 export default function Layout({ children }: { children: React.ReactNode }) {
     const location = useLocation();
     const [isSidebarOpen, setSidebarOpen] = useState(false);
 
+    // Settingsを削除
     const navItems = [
         { path: '/', label: 'Universal Tool', icon: Wand2 },
         { path: '/privacy', label: 'Privacy & Security', icon: ShieldCheck },
-        { path: '/settings', label: 'Global Settings', icon: Settings },
-        { path: '/feedback', label: 'Request Feature', icon: MessageSquarePlus }, // 追加
+        { path: '/feedback', label: 'Request & Feedback', icon: MessageSquarePlus },
     ];
-
-    
 
     const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
 
     return (
         <div className="min-h-screen bg-gray-100 flex font-sans text-gray-800">
-            
             {/* モバイル用メニューボタン */}
             <button 
                 onClick={toggleSidebar}
@@ -63,7 +53,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                             <Link
                                 key={item.path}
                                 to={item.path}
-                                onClick={() => setSidebarOpen(false)} // モバイルなら閉じる
+                                onClick={() => setSidebarOpen(false)}
                                 className={clsx(
                                     "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
                                     isActive 
@@ -78,17 +68,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     })}
                 </nav>
 
-                <div className="p-4 border-t border-gray-800">
-                    <a 
-                        href="https://github.com/Holmes-JP" 
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex items-center gap-2 text-sm text-gray-500 hover:text-white transition-colors"
-                    >
-                        <Github size={16} />
-                        <span>Created by Holmes-JP</span>
-                    </a>
-                </div>
+                {/* GitHubリンクのエリアを削除しました */}
             </aside>
 
             {/* メインコンテンツエリア */}
