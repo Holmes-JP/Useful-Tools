@@ -17,6 +17,7 @@ services:
       dockerfile: docker/php/Dockerfile
     volumes:
       - .:/var/www/html
+      - ./key.pem:/root/key.pem:ro
     environment:
       DB_HOST: db_tools
       DB_NAME: useful_tools_db

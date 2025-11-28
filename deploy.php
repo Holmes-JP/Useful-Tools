@@ -13,7 +13,7 @@ add('shared_files', ['.env']);
 host('production')
     ->setHostname('57.181.246.229')
     ->setRemoteUser('ubuntu')
-    ->setIdentityFile('/root/key.pem')
+    ->setIdentityFile('/root/deploy_key')
     ->set('deploy_path', '/var/www/useful-tools');
 
 // === ★追加: Composerインストールタスク ===
