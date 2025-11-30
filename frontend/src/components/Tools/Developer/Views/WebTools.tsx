@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import yaml from 'js-yaml';
-import * as toml from 'toml'; // toml parsing
+// 【修正】* as yaml としてインポートする
+import * as yaml from 'js-yaml';
 import { jwtDecode } from 'jwt-decode';
-import { FileJson, Eye, Regex, ArrowRight } from 'lucide-react';
+import { FileJson, Eye, Regex } from 'lucide-react';
 import clsx from 'clsx';
 
 export default function WebTools() {
@@ -11,7 +11,7 @@ export default function WebTools() {
     // JSON Converter
     const [jsonInput, setJsonInput] = useState('');
     const [jsonOutput, setJsonOutput] = useState('');
-    const [jsonFormat, setJsonFormat] = useState<'yaml' | 'toml'>('yaml');
+    const [jsonFormat, setJsonFormat] = useState<'yaml'>('yaml'); // TOMLは一旦除外して安定化
     
     // JWT
     const [jwtInput, setJwtInput] = useState('');
@@ -27,12 +27,12 @@ export default function WebTools() {
     useEffect(() => {
         if (!jsonInput.trim()) return;
         try {
-            // 入力がJSONかYAMLかを自動判定してオブジェクト化
             let obj;
             try {
                 obj = JSON.parse(jsonInput);
             } catch {
                 try {
+                    // yaml.load を使用
                     obj = yaml.load(jsonInput);
                 } catch {
                     setJsonOutput('Invalid JSON/YAML');
@@ -41,10 +41,9 @@ export default function WebTools() {
             }
 
             if (jsonFormat === 'yaml') {
+                // yaml.dump を使用
                 setJsonOutput(yaml.dump(obj));
             } else {
-                // TOML書き出しはライブラリ依存が面倒なので今回は簡易JSON整形にするか、
-                // 双方向変換の完全実装は複雑なため、ここでは整形済みJSONとして出力
                 setJsonOutput(JSON.stringify(obj, null, 2)); 
             }
         } catch (e) {
@@ -93,7 +92,7 @@ export default function WebTools() {
                     <div className="space-y-2">
                         <div className="flex justify-between">
                             <label className="text-xs text-gray-500">Output</label>
-                            <select value={jsonFormat} onChange={e => setJsonFormat(e.target.value as any)} className="bg-gray-800 text-white text-xs rounded px-2"><option value="yaml">to YAML</option><option value="toml">to JSON (Formatted)</option></select>
+                            <select value={jsonFormat} onChange={e => setJsonFormat(e.target.value as any)} className="bg-gray-800 text-white text-xs rounded px-2"><option value="yaml">to YAML</option><option value="json">to JSON</option></select>
                         </div>
                         <textarea readOnly value={jsonOutput} className="w-full h-64 bg-gray-900 border border-gray-600 rounded p-3 text-primary-400 font-mono text-xs" />
                     </div>

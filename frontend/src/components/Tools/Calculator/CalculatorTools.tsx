@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useCalculator, type HistoryItem } from '@/hooks/useCalculator';
+import { useCalculator, type HistoryItem } from '../../../hooks/useCalculator';
 import { Calculator, Binary, Ruler, History, Trash2, Delete, Scale, Coins, Copy } from 'lucide-react';
 import clsx from 'clsx';
 

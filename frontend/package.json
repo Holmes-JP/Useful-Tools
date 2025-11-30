@@ -12,12 +12,16 @@
   "dependencies": {
     "@ffmpeg/ffmpeg": "^0.12.15",
     "@ffmpeg/util": "^0.12.2",
+    "@types/js-yaml": "^4.0.9",
+    "@types/uuid": "^10.0.0",
     "browser-image-compression": "^2.0.2",
     "clsx": "^2.1.1",
     "crypto-js": "^4.2.0",
     "date-fns": "^4.1.0",
     "ip-subnet-calculator": "^2.0.1",
     "japanese-holidays": "^1.0.10",
+    "js-yaml": "^4.1.1",
+    "jwt-decode": "^4.0.0",
     "lucide-react": "^0.555.0",
     "mathjs": "^15.1.0",
     "pdf-lib": "^1.17.1",
@@ -28,7 +32,9 @@
     "react-helmet-async": "^2.0.5",
     "react-router-dom": "^7.9.6",
     "tailwind-merge": "^3.4.0",
+    "toml": "^3.0.0",
     "ua-parser-js": "^2.0.6",
+    "uuid": "^13.0.0",
     "zustand": "^5.0.8"
   },
   "devDependencies": {
