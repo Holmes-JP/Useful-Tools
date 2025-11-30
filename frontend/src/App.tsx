@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout/Layout';
 import UniversalConverter from './components/Tools/UniversalConverter';
+import VideoTools from './components/Tools/Video/VideoTools';
 import FileTools from './components/Tools/File/FileTools';
 import TextTools from './components/Tools/Text/TextTools';
 import TimeTools from './components/Tools/Time/TimeTools';
@@ -34,6 +35,7 @@ function App() {
           <Layout>
             <Routes>
               <Route path="/" element={<UniversalConverter />} />
+              <Route path="/video" element={<VideoTools />} />
               <Route path="/file" element={<FileTools />} />
               <Route path="/text" element={<TextTools />} />
               <Route path="/time" element={<TimeTools />} />

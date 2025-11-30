@@ -12,7 +12,8 @@ import {
     Image as ImageIcon,
     Network,
     Archive,
-    FileText // 修正: 追加
+    FileText,
+    Video
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -22,6 +23,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
     const navItems = [
         { path: '/', label: 'Universal Tool', icon: Wand2 },
+        { path: '/video', label: 'Video Studio', icon: Video },
         { path: '/file', label: 'File Master', icon: Archive },
         { path: '/text', label: 'Text & Code', icon: FileText },
         { path: '/time', label: 'Time Tools', icon: Clock },
