@@ -34,11 +34,14 @@
     "react-helmet-async": "^2.0.5",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.9.6",
+    "react-signature-canvas": "^1.1.0-alpha.2",
     "remark-gfm": "^4.0.1",
     "tailwind-merge": "^3.4.0",
+    "tesseract.js": "^6.0.1",
     "toml": "^3.0.0",
     "ua-parser-js": "^2.0.6",
     "uuid": "^13.0.0",
+    "wavesurfer.js": "^7.11.1",
     "zustand": "^5.0.8"
   },
   "devDependencies": {
@@ -50,6 +53,7 @@
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
+    "@types/react-signature-canvas": "^1.0.7",
     "@vitejs/plugin-react": "^5.1.1",
     "@vitejs/plugin-react-swc": "^4.2.2",
     "autoprefixer": "^10.4.22",

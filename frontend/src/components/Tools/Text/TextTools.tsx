@@ -1,18 +1,22 @@
 import React, { useState } from 'react';
-import { FileText, Split, FileCode } from 'lucide-react';
+import { FileText, Split, FileCode, ScanText, PenTool } from 'lucide-react';
 import clsx from 'clsx';
 
 import TextAnalyzer from './Views/TextAnalyzer';
 import DiffViewer from './Views/DiffViewer';
 import MarkdownPreview from './Views/MarkdownPreview';
+import OcrReader from './Views/OcrReader';
+import SignaturePad from './Views/SignaturePad';
 
 export default function TextTools() {
-    const [tab, setTab] = useState<'analyzer' | 'diff' | 'md'>('analyzer');
+    const [tab, setTab] = useState<'analyzer' | 'diff' | 'md' | 'ocr' | 'sign'>('analyzer');
 
     const tabs = [
-        { id: 'analyzer', label: 'Text Analyzer', icon: FileText },
-        { id: 'diff', label: 'Diff Viewer', icon: Split },
+        { id: 'analyzer', label: 'Analyzer', icon: FileText },
+        { id: 'diff', label: 'Diff', icon: Split },
         { id: 'md', label: 'Markdown', icon: FileCode },
+        { id: 'ocr', label: 'OCR', icon: ScanText },
+        { id: 'sign', label: 'Signature', icon: PenTool },
     ];
 
     return (
@@ -23,7 +27,7 @@ export default function TextTools() {
                     Text & Code
                 </h2>
                 <p className="text-gray-500 text-sm">
-                    Analyzer, Diff, and Markdown Editor
+                    Analysis, Conversion, and Utilities
                 </p>
             </div>
 
@@ -49,6 +53,8 @@ export default function TextTools() {
                 {tab === 'analyzer' && <TextAnalyzer />}
                 {tab === 'diff' && <DiffViewer />}
                 {tab === 'md' && <MarkdownPreview />}
+                {tab === 'ocr' && <OcrReader />}
+                {tab === 'sign' && <SignaturePad />}
             </div>
         </div>
     );
