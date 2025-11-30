@@ -3,11 +3,11 @@ import Layout from './components/Layout/Layout';
 import UniversalConverter from './components/Tools/UniversalConverter';
 import TimeTools from './components/Tools/Time/TimeTools';
 import CalculatorTools from './components/Tools/Calculator/CalculatorTools';
-import StreamerDashboard from './components/Tools/Streamer/StreamerDashboard';
 import Privacy from './components/Pages/Privacy';
 import Feedback from './components/Pages/Feedback';
 
-// Streamer Views (Layoutの外で表示するもの)
+// Streamer Tools
+import StreamerDashboard from './components/Tools/Streamer/StreamerDashboard';
 import ObsClock from './components/Tools/Streamer/Views/ObsClock';
 import ObsCounter from './components/Tools/Streamer/Views/ObsCounter';
 import ObsDice from './components/Tools/Streamer/Views/ObsDice';
@@ -19,12 +19,13 @@ import ObsTimer from './components/Tools/Streamer/Views/ObsTimer';
 import ObsStopwatch from './components/Tools/Streamer/Views/ObsStopwatch';
 import ObsSlideshow from './components/Tools/Streamer/Views/ObsSlideshow';
 import ObsBingo from './components/Tools/Streamer/Views/ObsBingo';
+import ObsConfetti from './components/Tools/Streamer/Views/ObsConfetti';
+import ObsChart from './components/Tools/Streamer/Views/ObsChart';
 
 function App() {
   return (
     <Router>
       <Routes>
-        {/* --- 通常のアプリ画面（サイドバーあり） --- */}
         <Route path="/*" element={
           <Layout>
             <Routes>
@@ -38,7 +39,7 @@ function App() {
           </Layout>
         } />
 
-        {/* --- OBS配信専用画面（サイドバーなし） --- */}
+        {/* OBS Views */}
         <Route path="/streamer/view/clock" element={<ObsClock />} />
         <Route path="/streamer/view/counter" element={<ObsCounter />} />
         <Route path="/streamer/view/dice" element={<ObsDice />} />
@@ -50,6 +51,8 @@ function App() {
         <Route path="/streamer/view/stopwatch" element={<ObsStopwatch />} />
         <Route path="/streamer/view/slideshow" element={<ObsSlideshow />} />
         <Route path="/streamer/view/bingo" element={<ObsBingo />} />
+        <Route path="/streamer/view/confetti" element={<ObsConfetti />} />
+        <Route path="/streamer/view/chart" element={<ObsChart />} />
       </Routes>
     </Router>
   );
