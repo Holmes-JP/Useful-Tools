@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout/Layout';
 import UniversalConverter from './components/Tools/UniversalConverter';
+import FileTools from './components/Tools/File/FileTools';
+import TextTools from './components/Tools/Text/TextTools';
 import TimeTools from './components/Tools/Time/TimeTools';
 import CalculatorTools from './components/Tools/Calculator/CalculatorTools';
 import ImageEditor from './components/Tools/ImageEditor/ImageEditor';
@@ -8,6 +10,7 @@ import DeveloperTools from './components/Tools/Developer/DeveloperTools';
 import Privacy from './components/Pages/Privacy';
 import Feedback from './components/Pages/Feedback';
 
+// Streamer Tools
 import StreamerDashboard from './components/Tools/Streamer/StreamerDashboard';
 import ObsClock from './components/Tools/Streamer/Views/ObsClock';
 import ObsCounter from './components/Tools/Streamer/Views/ObsCounter';
@@ -31,6 +34,8 @@ function App() {
           <Layout>
             <Routes>
               <Route path="/" element={<UniversalConverter />} />
+              <Route path="/file" element={<FileTools />} />
+              <Route path="/text" element={<TextTools />} />
               <Route path="/time" element={<TimeTools />} />
               <Route path="/calc" element={<CalculatorTools />} />
               <Route path="/editor" element={<ImageEditor />} />
@@ -42,6 +47,7 @@ function App() {
           </Layout>
         } />
 
+        {/* OBS Views */}
         <Route path="/streamer/view/clock" element={<ObsClock />} />
         <Route path="/streamer/view/counter" element={<ObsCounter />} />
         <Route path="/streamer/view/dice" element={<ObsDice />} />
