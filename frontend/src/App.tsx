@@ -22,6 +22,8 @@ import ObsBingo from './components/Tools/Streamer/Views/ObsBingo';
 import ObsConfetti from './components/Tools/Streamer/Views/ObsConfetti';
 import ObsChart from './components/Tools/Streamer/Views/ObsChart';
 
+import ImageEditor from './components/Tools/ImageEditor/ImageEditor';
+
 function App() {
   return (
     <Router>
@@ -33,6 +35,7 @@ function App() {
               <Route path="/time" element={<TimeTools />} />
               <Route path="/calc" element={<CalculatorTools />} />
               <Route path="/streamer" element={<StreamerDashboard />} />
+              <Route path="/editor" element={<ImageEditor />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/feedback" element={<Feedback />} />
             </Routes>

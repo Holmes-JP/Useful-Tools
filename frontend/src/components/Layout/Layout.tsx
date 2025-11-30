@@ -12,6 +12,7 @@ import clsx from 'clsx';
 import { Clock } from 'lucide-react';
 import { Calculator } from 'lucide-react';
 import { Cast } from 'lucide-react';
+import { Image as ImageIcon } from 'lucide-react';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
     const location = useLocation();
@@ -22,6 +23,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { path: '/', label: 'Universal Tool', icon: Wand2 },
         { path: '/time', label: 'Time Tools', icon: Clock },
         // { path: '/system', label: 'System Info', icon: Activity },
+        { path: '/editor', label: 'Image Editor', icon: ImageIcon },
         { path: '/privacy', label: 'Privacy & Security', icon: ShieldCheck },
         { path: '/feedback', label: 'Request & Feedback', icon: MessageSquarePlus },
         { path: '/calc', label: 'Calculator', icon: Calculator },
