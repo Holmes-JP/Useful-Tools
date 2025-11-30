@@ -11,6 +11,7 @@ import clsx from 'clsx';
 // import { Activity } from 'lucide-react';
 import { Clock } from 'lucide-react';
 import { Calculator } from 'lucide-react';
+import { Cast } from 'lucide-react';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
     const location = useLocation();
@@ -24,6 +25,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { path: '/privacy', label: 'Privacy & Security', icon: ShieldCheck },
         { path: '/feedback', label: 'Request & Feedback', icon: MessageSquarePlus },
         { path: '/calc', label: 'Calculator', icon: Calculator },
+        { path: '/streamer', label: 'Streamer Tools', icon: Cast },
     ];
 
     return (
