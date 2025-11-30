@@ -2,12 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { format, addDays, differenceInDays, differenceInYears, isValid, parse, fromUnixTime, getUnixTime, isLeapYear } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import JapaneseHolidays from 'japanese-holidays';
-import { Clock, Timer, Calculator, Binary, Copy, Play, Pause, RotateCcw, Flag } from 'lucide-react';
+import { Clock, Timer, Calculator, Binary, Copy, Play, Pause, RotateCcw, Flag, Check } from 'lucide-react';
 import clsx from 'clsx';
 
-// --- サブコンポーネント: 現在時刻 & 世界時計 ---
+// --- サブコンポーネント: 現在時刻 & 世界時計 (コピー機能付き) ---
 const WorldClock = () => {
     const [now, setNow] = useState(new Date());
+    const [copied, setCopied] = useState(false); // コピー状態管理
 
     useEffect(() => {
         const timer = setInterval(() => setNow(new Date()), 1000);
@@ -21,14 +22,43 @@ const WorldClock = () => {
         { name: 'UTC', tz: 'UTC' },
     ];
 
+    // クリップボードへのコピー機能
+    const handleCopy = () => {
+        // フォーマット例: 2025/11/30 (sunday) 15:10:38
+        const datePart = format(now, 'yyyy/MM/dd');
+        const dayPart = format(now, 'eeee').toLowerCase(); // Sunday -> sunday
+        const timePart = format(now, 'HH:mm:ss');
+        
+        const formattedString = `${datePart} (${dayPart}) ${timePart}`;
+
+        navigator.clipboard.writeText(formattedString).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        });
+    };
+
     return (
         <div className="space-y-6 animate-fade-in-up">
             {/* メイン時計 */}
-            <div className="bg-surface border border-gray-700 p-8 rounded-2xl text-center">
+            <div className="bg-surface border border-gray-700 p-8 rounded-2xl text-center relative group">
                 <p className="text-gray-400 font-mono mb-2">{format(now, 'yyyy/MM/dd (E)', { locale: ja })}</p>
-                <h2 className="text-6xl md:text-8xl font-bold text-primary-500 font-mono tracking-wider">
+                <h2 className="text-6xl md:text-8xl font-bold text-primary-500 font-mono tracking-wider mb-4">
                     {format(now, 'HH:mm:ss')}
                 </h2>
+
+                {/* コピーボタン */}
+                <button
+                    onClick={handleCopy}
+                    className={clsx(
+                        "absolute bottom-4 right-4 flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-bold transition-all",
+                        copied 
+                            ? "bg-green-500/20 text-green-400 border border-green-500/50" 
+                            : "bg-gray-800 text-gray-400 border border-gray-700 hover:bg-gray-700 hover:text-white"
+                    )}
+                >
+                    {copied ? <Check size={16} /> : <Copy size={16} />}
+                    {copied ? "Copied!" : "Copy Timestamp"}
+                </button>
             </div>
 
             {/* 世界時計グリッド */}
@@ -348,6 +378,7 @@ const Utilities = () => {
 };
 
 // --- メインコンポーネント ---
+// エラーの原因: ここがファイル末尾から消えている可能性があります
 export default function TimeTools() {
     const [activeTab, setActiveTab] = useState<'clock' | 'stopwatch' | 'calc' | 'util'>('clock');
 
