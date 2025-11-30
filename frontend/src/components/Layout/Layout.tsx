@@ -8,6 +8,9 @@ import {
     X 
 } from 'lucide-react';
 import clsx from 'clsx';
+// import { Activity } from 'lucide-react';
+import { Clock } from 'lucide-react';
+import { Calculator } from 'lucide-react';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
     const location = useLocation();
@@ -16,8 +19,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     // ナビゲーション項目定義
     const navItems = [
         { path: '/', label: 'Universal Tool', icon: Wand2 },
+        { path: '/time', label: 'Time Tools', icon: Clock },
+        // { path: '/system', label: 'System Info', icon: Activity },
         { path: '/privacy', label: 'Privacy & Security', icon: ShieldCheck },
         { path: '/feedback', label: 'Request & Feedback', icon: MessageSquarePlus },
+        { path: '/calc', label: 'Calculator', icon: Calculator },
     ];
 
     return (
