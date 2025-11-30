@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import ReactCrop, { Crop, PixelCrop } from 'react-image-crop';
+import ReactCrop, { type Crop, type PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
-import { useImageEditor, defaultFilters } from '@/hooks/useImageEditor';
-import { Upload, Download, RefreshCcw, Sliders, Image as ImageIcon, Crop as CropIcon } from 'lucide-react';
+// エラー修正: FilterConfig をインポートに追加
+import { useImageEditor, defaultFilters, type FilterConfig } from '@/hooks/useImageEditor';
+import { Download, RefreshCcw, Sliders, Image as ImageIcon, Crop as CropIcon } from 'lucide-react';
 import clsx from 'clsx';
 
 export default function ImageEditor() {
@@ -15,26 +16,22 @@ export default function ImageEditor() {
 
     const [activeTab, setActiveTab] = useState<'crop' | 'adjust'>('crop');
 
-    // 画像や設定が変わったらプレビューを更新
     useEffect(() => {
         const t = setTimeout(() => canvasPreview(), 100);
         return () => clearTimeout(t);
-    }, [completedCrop, filters]);
+    }, [completedCrop, filters, canvasPreview]);
 
-    // ファイル選択ハンドラ
     const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
             onSelectFile(e.target.files[0]);
         }
     };
 
-    // リセット
     const resetFilters = () => setFilters(defaultFilters);
 
     return (
         <div className="max-w-6xl mx-auto h-[calc(100vh-100px)] flex flex-col lg:flex-row gap-6 p-4">
             
-            {/* 左側: エディタエリア (画像表示) */}
             <div className="flex-1 bg-gray-900 rounded-2xl border border-gray-800 flex items-center justify-center p-4 relative overflow-hidden">
                 {!imgSrc ? (
                     <div className="text-center">
@@ -50,10 +47,11 @@ export default function ImageEditor() {
                     </div>
                 ) : (
                     <div className="relative max-w-full max-h-full">
+                        {/* @ts-ignore */}
                         <ReactCrop
                             crop={crop}
-                            onChange={(_, percentCrop) => setCrop(percentCrop)}
-                            onComplete={(c) => setCompletedCrop(c)}
+                            onChange={(_: PixelCrop, percentCrop: Crop) => setCrop(percentCrop)}
+                            onComplete={(c: PixelCrop) => setCompletedCrop(c)}
                             aspect={aspect}
                             className="max-h-[70vh]"
                         >
@@ -67,9 +65,8 @@ export default function ImageEditor() {
                                         ? `brightness(${filters.brightness}%) contrast(${filters.contrast}%) saturate(${filters.saturate}%) grayscale(${filters.grayscale}%) blur(${filters.blur}px)` 
                                         : 'none'
                                 }}
-                                onLoad={(e) => {
-                                    // 初期ロード時に全体を選択状態にする
-                                    const { width, height } = e.currentTarget;
+                                // エラー修正: 未使用の変数を削除
+                                onLoad={() => {
                                     setCrop({ unit: '%', width: 90, height: 90, x: 5, y: 5 });
                                 }}
                             />
@@ -78,11 +75,8 @@ export default function ImageEditor() {
                 )}
             </div>
 
-            {/* 右側: ツールパネル */}
             {imgSrc && (
                 <div className="w-full lg:w-80 bg-surface border border-gray-700 rounded-2xl flex flex-col">
-                    
-                    {/* タブ切り替え */}
                     <div className="flex border-b border-gray-700">
                         <button 
                             onClick={() => setActiveTab('crop')}
@@ -99,7 +93,6 @@ export default function ImageEditor() {
                     </div>
 
                     <div className="flex-1 p-6 overflow-y-auto">
-                        
                         {activeTab === 'crop' && (
                             <div className="space-y-6">
                                 <div>
@@ -166,7 +159,6 @@ export default function ImageEditor() {
                         )}
                     </div>
 
-                    {/* アクションボタン */}
                     <div className="p-4 border-t border-gray-700 bg-gray-900/50">
                         <button 
                             onClick={download}
@@ -174,8 +166,6 @@ export default function ImageEditor() {
                         >
                             <Download size={20} /> Download Result
                         </button>
-                        
-                        {/* 隠しCanvas (処理用) */}
                         <canvas ref={previewCanvasRef} className="hidden" />
                     </div>
                 </div>

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { format, addDays, differenceInDays, differenceInYears, isValid, parse, fromUnixTime, getUnixTime, isLeapYear } from 'date-fns';
+import { useState, useEffect, useRef } from 'react';
+import { format, addDays, differenceInDays, differenceInYears, isValid, fromUnixTime, getUnixTime, isLeapYear } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import JapaneseHolidays from 'japanese-holidays';
 import { Clock, Timer, Calculator, Binary, Copy, Play, Pause, RotateCcw, Flag, Check } from 'lucide-react';

@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { PixelCrop } from 'react-image-crop';
+import { type Crop, type PixelCrop } from 'react-image-crop';
 
 export type FilterConfig = {
     brightness: number; // 100%
@@ -21,7 +21,7 @@ export const useImageEditor = () => {
     const [imgSrc, setImgSrc] = useState('');
     const imgRef = useRef<HTMLImageElement>(null);
     const previewCanvasRef = useRef<HTMLCanvasElement>(null);
-    const [crop, setCrop] = useState<PixelCrop>();
+    const [crop, setCrop] = useState<Crop>();
     const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
     const [filters, setFilters] = useState<FilterConfig>(defaultFilters);
     const [aspect, setAspect] = useState<number | undefined>(undefined);
