@@ -1,11 +1,12 @@
 import React from 'react';
 
 export type AudioConfig = {
-    format: 'mp3' | 'wav' | 'aac' | 'm4a' | 'ogg' | 'flac';
-    bitrate: '128k' | '192k' | '256k' | '320k';
-    sampleRate: number; // 44100, 48000 etc
-    channels: 'original' | '1' | '2'; // 1=Mono, 2=Stereo
-    volume: number; // 1.0 = 100%
+    format: 'mp3' | 'wav' | 'aac' | 'm4a' | 'ogg' | 'flac' | 'wma' | 'aiff' | 'opus';
+    bitrate: '128k' | '192k' | '256k' | '320k' | 'custom';
+    customBitrate: string;
+    sampleRate: number;
+    channels: 'original' | '1' | '2';
+    volume: number;
     metadataTitle: string;
     metadataArtist: string;
     metadataDate: string;
@@ -37,6 +38,9 @@ export default function AudioSettings({ config, onChange }: Props) {
                         <option value="m4a">M4A</option>
                         <option value="ogg">OGG</option>
                         <option value="flac">FLAC</option>
+                        <option value="opus">Opus</option>
+                        <option value="wma">WMA</option>
+                        <option value="aiff">AIFF</option>
                     </select>
                 </div>
                 <div>
@@ -46,47 +50,36 @@ export default function AudioSettings({ config, onChange }: Props) {
                         <option value="192k">192 kbps</option>
                         <option value="256k">256 kbps</option>
                         <option value="320k">320 kbps</option>
+                        <option value="custom">Custom</option>
                     </select>
+                    {config.bitrate === 'custom' && (
+                        <input type="text" placeholder="e.g. 64k" value={config.customBitrate} onChange={e => update('customBitrate', e.target.value)} className="w-full mt-2 bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm" />
+                    )}
                 </div>
                 <div>
                     <label className="block text-xs text-gray-500 mb-1">Sample Rate (Hz)</label>
                     <select value={config.sampleRate} onChange={(e) => update('sampleRate', Number(e.target.value))} className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm">
                         <option value={0}>Original</option>
-                        <option value={44100}>44100 Hz</option>
-                        <option value={48000}>48000 Hz</option>
-                        <option value={96000}>96000 Hz</option>
+                        <option value={44100}>44100 Hz (CD)</option>
+                        <option value={48000}>48000 Hz (Video)</option>
+                        <option value={96000}>96000 Hz (Hi-Res)</option>
                     </select>
                 </div>
                 <div>
                     <label className="block text-xs text-gray-500 mb-1">Channels</label>
                     <select value={config.channels} onChange={(e) => update('channels', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm">
                         <option value="original">Original</option>
-                        <option value="2">Stereo (2)</option>
-                        <option value="1">Mono (1)</option>
+                        <option value="2">Stereo (2ch)</option>
+                        <option value="1">Mono (1ch)</option>
                     </select>
                 </div>
             </div>
-            
-            <div>
-                 <label className="text-xs text-gray-500 block mb-1 flex justify-between">
-                    <span>Volume Gain</span>
-                    <span>{Math.round(config.volume * 100)}%</span>
-                </label>
-                <input type="range" min="0" max="2" step="0.1" value={config.volume} onChange={e => update('volume', Number(e.target.value))} className="w-full accent-primary-500" />
-            </div>
 
-            {/* Metadata */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                    <label className="block text-xs text-gray-500 mb-1">Title</label>
-                    <input type="text" value={config.metadataTitle} onChange={(e) => update('metadataTitle', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm" />
-                </div>
-                <div>
-                    <label className="block text-xs text-gray-500 mb-1">Artist</label>
-                    <input type="text" value={config.metadataArtist} onChange={(e) => update('metadataArtist', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm" />
-                </div>
-                <div>
-                    <label className="block text-xs text-gray-500 mb-1">Date</label>
+            <div className="border-t border-gray-700 pt-4">
+                <label className="block text-xs text-gray-500 mb-1">Metadata</label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    <input type="text" placeholder="Title" value={config.metadataTitle} onChange={(e) => update('metadataTitle', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm" />
+                    <input type="text" placeholder="Artist" value={config.metadataArtist} onChange={(e) => update('metadataArtist', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm" />
                     <input type="date" value={config.metadataDate} onChange={(e) => update('metadataDate', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm" />
                 </div>
             </div>

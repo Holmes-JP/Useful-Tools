@@ -1,12 +1,8 @@
 import React from 'react';
 
 export type ImageConfig = {
-    format: 'original' | 'png' | 'jpeg' | 'webp' | 'bmp' | 'gif' | 'ico';
+    format: 'original' | 'png' | 'jpeg' | 'webp' | 'bmp' | 'ico' | 'pdf';
     quality: number; // 0.1 - 1.0
-    maxWidth: number;
-    maxHeight: number;
-    keepAspect: boolean;
-    metadataDate: string;
 };
 
 type Props = {
@@ -30,11 +26,12 @@ export default function ImageSettings({ config, onChange }: Props) {
                     <label className="block text-xs text-gray-500 mb-1">Output Format</label>
                     <select value={config.format} onChange={(e) => update('format', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm">
                         <option value="original">Original</option>
-                        <option value="png">PNG (Lossless)</option>
+                        <option value="png">PNG</option>
                         <option value="jpeg">JPEG</option>
-                        <option value="webp">WebP (High Comp.)</option>
+                        <option value="webp">WebP</option>
                         <option value="bmp">BMP</option>
-                        <option value="ico">ICO (Icon)</option>
+                        <option value="ico">ICO</option>
+                        <option value="pdf">PDF (Document)</option>
                     </select>
                 </div>
                 
@@ -43,22 +40,6 @@ export default function ImageSettings({ config, onChange }: Props) {
                         Quality (JPEG/WebP): {Math.round(config.quality * 100)}%
                     </label>
                     <input type="range" min="0.1" max="1.0" step="0.05" value={config.quality} onChange={(e) => update('quality', parseFloat(e.target.value))} className="w-full accent-primary-500" />
-                </div>
-
-                <div className="md:col-span-2 grid grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-xs text-gray-500 mb-1">Max Width (px)</label>
-                        <input type="number" placeholder="Original" value={config.maxWidth || ''} onChange={(e) => update('maxWidth', Number(e.target.value))} className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm" />
-                    </div>
-                    <div>
-                        <label className="block text-xs text-gray-500 mb-1">Max Height (px)</label>
-                        <input type="number" placeholder="Original" value={config.maxHeight || ''} onChange={(e) => update('maxHeight', Number(e.target.value))} className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm" />
-                    </div>
-                </div>
-                
-                <div>
-                    <label className="block text-xs text-gray-500 mb-1">Creation Date (Metadata)</label>
-                    <input type="datetime-local" value={config.metadataDate} onChange={(e) => update('metadataDate', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm" />
                 </div>
             </div>
         </div>

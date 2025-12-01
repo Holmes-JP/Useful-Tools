@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout/Layout';
 import UniversalConverter from './components/Tools/UniversalConverter';
 import AudioLab from './components/Tools/Audio/AudioLab';
+import DocumentStudio from './components/Tools/Document/DocumentStudio';
 import VideoTools from './components/Tools/Video/VideoTools';
 import FileTools from './components/Tools/File/FileTools';
 import TextTools from './components/Tools/Text/TextTools';
@@ -37,6 +38,7 @@ function App() {
             <Routes>
               <Route path="/" element={<UniversalConverter />} />
               <Route path="/audio" element={<AudioLab />} />
+          <Route path="/doc" element={<DocumentStudio />} />
           <Route path="/video" element={<VideoTools />} />
               <Route path="/file" element={<FileTools />} />
               <Route path="/text" element={<TextTools />} />
@@ -71,4 +73,5 @@ function App() {
 }
 
 export default App;
+
 

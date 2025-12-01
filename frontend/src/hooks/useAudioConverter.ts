@@ -9,7 +9,7 @@ export const useAudioConverter = () => {
     const [outputUrls, setOutputUrls] = useState<{name: string, url: string}[]>([]);
     const ffmpegRef = useRef(new FFmpeg());
 
-    const addLog = (msg: string) => setLog(prev => [...prev.slice(-19), msg]);
+    const addLog = (msg: string) => setLog(prev => [...prev.slice(-20), msg]);
 
     const load = useCallback(async () => {
         const ffmpeg = ffmpegRef.current;
@@ -20,7 +20,7 @@ export const useAudioConverter = () => {
                 coreURL: await toBlobURL('/ffmpeg/ffmpeg-core.js', 'text/javascript'),
                 wasmURL: await toBlobURL('/ffmpeg/ffmpeg-core.wasm', 'application/wasm'),
             });
-        } catch (err: any) { addLog("Engine error: " + err.message); }
+        } catch (err: any) { addLog("Error: " + err.message); }
     }, []);
 
     useEffect(() => { load(); }, [load]);
@@ -33,13 +33,14 @@ export const useAudioConverter = () => {
             const results = [];
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
-                addLog(`Processing: ${file.name}`);
+                addLog(`Converting: ${file.name}`);
                 
-                await ffmpeg.writeFile('in', await fetchFile(file));
-                const args = ['-i', 'in'];
+                const inName = `in_${i}`;
+                await ffmpeg.writeFile(inName, await fetchFile(file));
+                const args = ['-i', inName, '-vn', '-threads', '0', '-map_metadata', '-1'];
                 
-                args.push('-vn'); // 映像削除
-                if (config.bitrate) args.push('-b:a', config.bitrate);
+                const br = config.bitrate === 'custom' ? config.customBitrate : config.bitrate;
+                if (br) args.push('-b:a', br);
                 if (config.sampleRate > 0) args.push('-ar', config.sampleRate.toString());
                 if (config.channels !== 'original') args.push('-ac', config.channels);
                 if (config.volume !== 1.0) args.push('-af', `volume=${config.volume}`);
@@ -48,20 +49,18 @@ export const useAudioConverter = () => {
                 if (config.metadataArtist) args.push('-metadata', `artist=${config.metadataArtist}`);
                 if (config.metadataDate) args.push('-metadata', `date=${config.metadataDate}`);
 
-                const outName = `out.${config.format}`;
+                const outName = `out_${i}.${config.format}`;
                 args.push(outName);
                 
                 await ffmpeg.exec(args);
-                
                 const data = await ffmpeg.readFile(outName);
                 const url = URL.createObjectURL(new Blob([(data as any)]));
-                results.push({ name: file.name.split('.')[0] + '.' + config.format, url });
+                results.push({ name: `${file.name.split('.')[0]}.${config.format}`, url });
                 
-                await ffmpeg.deleteFile('in');
+                await ffmpeg.deleteFile(inName);
                 await ffmpeg.deleteFile(outName);
             }
             setOutputUrls(results);
-            addLog("Done!");
         } catch (e: any) {
             addLog("Error: " + e.message);
         } finally {
