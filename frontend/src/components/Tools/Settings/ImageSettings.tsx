@@ -1,71 +1,64 @@
-import { ImageOptions } from '@/hooks/useImageConverter'; // 型をインポート
+import React from 'react';
+
+export type ImageConfig = {
+    format: 'original' | 'png' | 'jpeg' | 'webp' | 'bmp' | 'gif' | 'ico';
+    quality: number; // 0.1 - 1.0
+    maxWidth: number;
+    maxHeight: number;
+    keepAspect: boolean;
+    metadataDate: string;
+};
 
 type Props = {
-    config: ImageOptions;
-    onChange: (newConfig: ImageOptions) => void;
+    config: ImageConfig;
+    onChange: (newConfig: ImageConfig) => void;
 };
 
 export default function ImageSettings({ config, onChange }: Props) {
-    
-    const update = (key: keyof ImageOptions, value: any) => {
+    const update = (key: keyof ImageConfig, value: any) => {
         onChange({ ...config, [key]: value });
     };
 
     return (
-        <div className="bg-gray-800 text-gray-200 p-6 rounded-xl border border-gray-700 shadow-inner">
-            <h3 className="text-sm font-bold text-gray-400 mb-4 border-b border-gray-700 pb-2">
-                Image Compression Settings
+        <div className="bg-gray-800 text-gray-200 p-6 rounded-xl border border-gray-700 shadow-inner space-y-6">
+            <h3 className="text-sm font-bold text-primary-400 border-b border-gray-700 pb-2 mb-4">
+                Image Settings
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* 1. 出力フォーマット */}
                 <div>
-                    <label className="block text-xs font-bold text-gray-500 mb-1">Output Format</label>
-                    <select
-                        value={config.format}
-                        onChange={(e) => update('format', e.target.value)}
-                        className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white focus:border-blue-500 focus:outline-none"
-                    >
-                        <option value="original">Original (Keep same)</option>
-                        <option value="webp">WebP (Best Compression)</option>
-                        <option value="jpeg">JPEG (Standard)</option>
+                    <label className="block text-xs text-gray-500 mb-1">Output Format</label>
+                    <select value={config.format} onChange={(e) => update('format', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm">
+                        <option value="original">Original</option>
                         <option value="png">PNG (Lossless)</option>
-                    </select>
-                </div>
-
-                {/* 2. リサイズ */}
-                <div>
-                    <label className="block text-xs font-bold text-gray-500 mb-1">Max Width (px)</label>
-                    <select
-                        value={config.maxWidth}
-                        onChange={(e) => update('maxWidth', Number(e.target.value))}
-                        className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white focus:border-blue-500 focus:outline-none"
-                    >
-                        <option value={0}>Original Size</option>
-                        <option value={1920}>1920 px (Full HD)</option>
-                        <option value={1280}>1280 px</option>
-                        <option value={800}>800 px</option>
+                        <option value="jpeg">JPEG</option>
+                        <option value="webp">WebP (High Comp.)</option>
+                        <option value="bmp">BMP</option>
+                        <option value="ico">ICO (Icon)</option>
                     </select>
                 </div>
                 
-                {/* 3. 画質スライダー */}
-                <div className="md:col-span-2">
-                    <label className="block text-xs font-bold text-gray-500 mb-1">
-                        Quality: {Math.round(config.quality * 100)}%
+                <div>
+                    <label className="block text-xs text-gray-500 mb-1">
+                        Quality (JPEG/WebP): {Math.round(config.quality * 100)}%
                     </label>
-                    <input 
-                        type="range" 
-                        min="0.1" 
-                        max="1.0" 
-                        step="0.1"
-                        value={config.quality}
-                        onChange={(e) => update('quality', parseFloat(e.target.value))}
-                        className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                    />
-                    <div className="flex justify-between text-xs text-gray-500 mt-1">
-                        <span>Low Size</span>
-                        <span>High Quality</span>
+                    <input type="range" min="0.1" max="1.0" step="0.05" value={config.quality} onChange={(e) => update('quality', parseFloat(e.target.value))} className="w-full accent-primary-500" />
+                </div>
+
+                <div className="md:col-span-2 grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-xs text-gray-500 mb-1">Max Width (px)</label>
+                        <input type="number" placeholder="Original" value={config.maxWidth || ''} onChange={(e) => update('maxWidth', Number(e.target.value))} className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm" />
                     </div>
+                    <div>
+                        <label className="block text-xs text-gray-500 mb-1">Max Height (px)</label>
+                        <input type="number" placeholder="Original" value={config.maxHeight || ''} onChange={(e) => update('maxHeight', Number(e.target.value))} className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm" />
+                    </div>
+                </div>
+                
+                <div>
+                    <label className="block text-xs text-gray-500 mb-1">Creation Date (Metadata)</label>
+                    <input type="datetime-local" value={config.metadataDate} onChange={(e) => update('metadataDate', e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm" />
                 </div>
             </div>
         </div>

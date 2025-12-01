@@ -1,153 +1,110 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile, toBlobURL } from '@ffmpeg/util';
-
-// 設定オプションの型定義（VideoSettings.tsxと合わせる）
-export type VideoOptions = {
-    format: 'mp4' | 'webm' | 'gif';
-    resolution: 'original' | '1080p' | '720p' | '480p';
-    mute: boolean;
-};
+import type { VideoConfig } from '@/components/Tools/Settings/VideoSettings';
 
 export const useVideoConverter = () => {
-    const [loaded, setLoaded] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [log, setLog] = useState<string>("Ready to initialize...");
-    const [error, setError] = useState<string | null>(null);
-    const [outputUrl, setOutputUrl] = useState<string | null>(null);
+    const [log, setLog] = useState<string[]>([]); // ログを配列に変更
+    const [outputUrls, setOutputUrls] = useState<{name: string, url: string}[]>([]);
     
-    // FFmpegインスタンスの保持
     const ffmpegRef = useRef(new FFmpeg());
 
-    // ロード処理 (ローカルファイル /ffmpeg を参照)
+    const addLog = (msg: string) => {
+        setLog(prev => [...prev.slice(-19), msg]); // 最新20行
+    };
+
     const load = useCallback(async () => {
         const ffmpeg = ffmpegRef.current;
-        if (ffmpeg.loaded) {
-            setLoaded(true);
-            return;
-        }
+        if (ffmpeg.loaded) return;
 
-        setIsLoading(true);
-        const baseURL = '/ffmpeg';
-
-        ffmpeg.on('log', ({ message }) => {
-            console.log(message);
-            // ログメッセージの表示を少し整形（任意）
-            if (message.length > 100) {
-                setLog(message.substring(0, 100) + "...");
-            } else {
-                setLog(message);
-            }
-        });
+        ffmpeg.on('log', ({ message }) => addLog(message));
 
         try {
             await ffmpeg.load({
-                coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-                wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+                coreURL: await toBlobURL('/ffmpeg/ffmpeg-core.js', 'text/javascript'),
+                wasmURL: await toBlobURL('/ffmpeg/ffmpeg-core.wasm', 'application/wasm'),
             });
-            setLoaded(true);
-            setLog("FFmpeg engine loaded.");
+            addLog("FFmpeg engine loaded.");
         } catch (err: any) {
-            console.error(err);
-            setError(err.message || "Failed to load FFmpeg engine.");
-        } finally {
-            setIsLoading(false);
+            addLog("Error loading engine: " + err.message);
         }
     }, []);
 
-    // 初期化時にロード
-    useEffect(() => {
-        load();
-    }, [load]);
+    useEffect(() => { load(); }, [load]);
 
-    // 変換処理本体
-    const convertVideo = async (file: File, options: VideoOptions) => {
+    // 一括変換
+    const convertVideos = async (files: File[], config: VideoConfig) => {
         const ffmpeg = ffmpegRef.current;
         setIsLoading(true);
-        setError(null);
-        setOutputUrl(null);
-        setLog("Start converting...");
+        setLog([]);
+        setOutputUrls([]);
 
         try {
-            // 1. 仮想ファイルシステムに入力ファイルを書き込み
-            await ffmpeg.writeFile('input', await fetchFile(file));
+            const results = [];
             
-            // 2. FFmpegコマンドの構築
-            const args = ['-i', 'input'];
-            
-            // 解像度変更 (-vf scale=...)
-            if (options.resolution !== 'original') {
-                const scaleMap = {
-                    '1080p': '1920:-2', // -2はアスペクト比を維持して偶数に調整（FFmpeg推奨）
-                    '720p': '1280:-2',
-                    '480p': '854:-2'
-                };
-                args.push('-vf', `scale=${scaleMap[options.resolution]}`);
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                addLog(`\n--- Processing ${i+1}/${files.length}: ${file.name} ---`);
+
+                const inputFile = `input_${i}`;
+                await ffmpeg.writeFile(inputFile, await fetchFile(file));
+
+                const args = ['-i', inputFile];
+
+                // コーデック
+                if (config.codecVideo !== 'default') args.push('-c:v', config.codecVideo);
+                if (config.codecAudio !== 'default') args.push('-c:a', config.codecAudio);
+
+                // 解像度
+                if (config.resolution !== 'original') {
+                    const scale = config.resolution === 'custom' 
+                        ? `${config.customWidth}:${config.customHeight}`
+                        : config.resolution === '1080p' ? '1920:-2'
+                        : config.resolution === '720p' ? '1280:-2'
+                        : '854:-2'; // 480p
+                    args.push('-vf', `scale=${scale}`);
+                }
+                
+                // FPS
+                if (config.frameRate > 0) args.push('-r', config.frameRate.toString());
+
+                // 音声
+                if (config.mute) args.push('-an');
+
+                // メタデータ
+                if (config.metadataTitle) args.push('-metadata', `title=${config.metadataTitle}`);
+                if (config.metadataDate) args.push('-metadata', `creation_time=${config.metadataDate}`);
+
+                // 出力設定
+                const ext = config.format;
+                const outputName = `converted_${i}.${ext}`;
+                args.push(outputName);
+
+                addLog(`Command: ${args.join(' ')}`);
+                await ffmpeg.exec(args);
+
+                // 結果取得
+                const data = await ffmpeg.readFile(outputName);
+                const blob = new Blob([(data as any)], { type: `video/${ext}` });
+                const url = URL.createObjectURL(blob);
+                
+                results.push({ name: file.name.split('.')[0] + '.' + ext, url });
+                
+                // クリーンアップ
+                await ffmpeg.deleteFile(inputFile);
+                await ffmpeg.deleteFile(outputName);
             }
 
-            // 音声ミュート (-an)
-            if (options.mute) {
-                args.push('-an');
-            }
-
-            // フォーマットごとの最適化設定
-            if (options.format === 'mp4') {
-                // MP4: 速度優先プリセット
-                args.push('-preset', 'ultrafast');
-            } else if (options.format === 'webm') {
-                // WebM: リアルタイム向けの高速設定 (VP9/VP8)
-                // CPU負荷を下げるため品質より速度を優先
-                args.push('-deadline', 'realtime', '-cpu-used', '4');
-            } else if (options.format === 'gif') {
-                // GIF: フレームレートを少し落として軽くする（例: 10fps）
-                // ※解像度変更と併用する場合はフィルタを結合する必要がありますが
-                // FFmpegは -vf を複数回指定すると上書きされるため、ここでは単純化のため
-                // scale指定がない場合のみfps指定を入れるなどの分岐が必要ですが
-                // シンプルにGIF変換のみ行います。
-                args.push('-r', '10'); 
-            }
-
-            // 出力ファイル名
-            const outputFile = `output.${options.format}`;
-            args.push(outputFile);
-
-            setLog(`Command: ffmpeg ${args.join(' ')}`);
-
-            // 3. コマンド実行
-            await ffmpeg.exec(args);
-            
-            // 4. 出力ファイルの読み込み
-            const data = await ffmpeg.readFile(outputFile);
-            
-            // 5. Blob URL生成
-            // MIMEタイプを拡張子に合わせて設定
-            let mimeType = 'video/mp4';
-            if (options.format === 'webm') mimeType = 'video/webm';
-            if (options.format === 'gif') mimeType = 'image/gif';
-
-            const url = URL.createObjectURL(new Blob([(data as any)], { type: mimeType }));
-            
-            setOutputUrl(url);
-            setLog("Conversion complete!");
-
-            // (オプション) 仮想ファイルのクリーンアップ
-            // await ffmpeg.deleteFile('input');
-            // await ffmpeg.deleteFile(outputFile);
+            setOutputUrls(results);
+            addLog("\nAll conversions complete!");
 
         } catch (err: any) {
-            console.error(err);
-            setError("Conversion failed. " + (err.message || "Unknown error"));
+            addLog("Critical Error: " + err.message);
         } finally {
             setIsLoading(false);
         }
     };
 
-    return {
-        loaded,
-        isLoading,
-        log,
-        error,
-        outputUrl,
-        convertVideo
-    };
+    return { isLoading, log, outputUrls, convertVideos, load };
 };

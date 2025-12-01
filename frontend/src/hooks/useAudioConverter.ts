@@ -1,91 +1,73 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile, toBlobURL } from '@ffmpeg/util';
-
-export type AudioOptions = {
-    format: 'mp3' | 'wav' | 'aac' | 'm4a';
-    bitrate: '128k' | '192k' | '256k' | '320k';
-};
+import type { AudioConfig } from '@/components/Tools/Settings/AudioSettings';
 
 export const useAudioConverter = () => {
-    const [isAudioLoading, setIsAudioLoading] = useState(false);
-    const [audioLog, setAudioLog] = useState<string>("Ready.");
-    const [audioError, setAudioError] = useState<string | null>(null);
-    const [audioOutputUrl, setAudioOutputUrl] = useState<string | null>(null);
-    
+    const [isLoading, setIsLoading] = useState(false);
+    const [log, setLog] = useState<string[]>([]);
+    const [outputUrls, setOutputUrls] = useState<{name: string, url: string}[]>([]);
     const ffmpegRef = useRef(new FFmpeg());
 
-    // ロード処理（動画と共通化もできますが、独立性を保つため記述）
+    const addLog = (msg: string) => setLog(prev => [...prev.slice(-19), msg]);
+
     const load = useCallback(async () => {
         const ffmpeg = ffmpegRef.current;
         if (ffmpeg.loaded) return;
-
-        setIsAudioLoading(true);
-        const baseURL = '/ffmpeg';
-
+        ffmpeg.on('log', ({ message }) => addLog(message));
         try {
             await ffmpeg.load({
-                coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-                wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+                coreURL: await toBlobURL('/ffmpeg/ffmpeg-core.js', 'text/javascript'),
+                wasmURL: await toBlobURL('/ffmpeg/ffmpeg-core.wasm', 'application/wasm'),
             });
-        } catch (err: any) {
-            console.error(err);
-            setAudioError("Failed to load audio engine.");
-        } finally {
-            setIsAudioLoading(false);
-        }
+        } catch (err: any) { addLog("Engine error: " + err.message); }
     }, []);
 
     useEffect(() => { load(); }, [load]);
 
-    // 変換実行
-    const convertAudio = async (file: File, options: AudioOptions) => {
+    const convertAudios = async (files: File[], config: AudioConfig) => {
         const ffmpeg = ffmpegRef.current;
-        setIsAudioLoading(true);
-        setAudioError(null);
-        setAudioOutputUrl(null);
-        setAudioLog("Converting audio...");
+        setIsLoading(true); setLog([]); setOutputUrls([]);
 
         try {
-            // ファイル書き込み
-            await ffmpeg.writeFile('input', await fetchFile(file));
-            
-            // コマンド構築
-            const outputFile = `output.${options.format}`;
-            // -vn: 映像無効化, -ab: ビットレート
-            const args = ['-i', 'input', '-vn', '-ab', options.bitrate, outputFile];
+            const results = [];
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                addLog(`Processing: ${file.name}`);
+                
+                await ffmpeg.writeFile('in', await fetchFile(file));
+                const args = ['-i', 'in'];
+                
+                args.push('-vn'); // 映像削除
+                if (config.bitrate) args.push('-b:a', config.bitrate);
+                if (config.sampleRate > 0) args.push('-ar', config.sampleRate.toString());
+                if (config.channels !== 'original') args.push('-ac', config.channels);
+                if (config.volume !== 1.0) args.push('-af', `volume=${config.volume}`);
+                
+                if (config.metadataTitle) args.push('-metadata', `title=${config.metadataTitle}`);
+                if (config.metadataArtist) args.push('-metadata', `artist=${config.metadataArtist}`);
+                if (config.metadataDate) args.push('-metadata', `date=${config.metadataDate}`);
 
-            await ffmpeg.exec(args);
-            
-            // 結果読み出し
-            const data = await ffmpeg.readFile(outputFile);
-            
-            // MIMEタイプ設定
-            const mimeMap = {
-                mp3: 'audio/mpeg',
-                wav: 'audio/wav',
-                aac: 'audio/aac',
-                m4a: 'audio/mp4'
-            };
-            
-            // Blob生成 (anyキャストで型エラー回避)
-            const url = URL.createObjectURL(new Blob([(data as any)], { type: mimeMap[options.format] }));
-            setAudioOutputUrl(url);
-            setAudioLog("Conversion complete!");
-
-        } catch (err: any) {
-            console.error(err);
-            setAudioError("Audio conversion failed: " + err.message);
+                const outName = `out.${config.format}`;
+                args.push(outName);
+                
+                await ffmpeg.exec(args);
+                
+                const data = await ffmpeg.readFile(outName);
+                const url = URL.createObjectURL(new Blob([(data as any)]));
+                results.push({ name: file.name.split('.')[0] + '.' + config.format, url });
+                
+                await ffmpeg.deleteFile('in');
+                await ffmpeg.deleteFile(outName);
+            }
+            setOutputUrls(results);
+            addLog("Done!");
+        } catch (e: any) {
+            addLog("Error: " + e.message);
         } finally {
-            setIsAudioLoading(false);
+            setIsLoading(false);
         }
     };
 
-    return {
-        isAudioLoading,
-        audioLog,
-        audioError,
-        audioOutputUrl,
-        convertAudio
-    };
+    return { isLoading, log, outputUrls, convertAudios };
 };

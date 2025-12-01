@@ -1,80 +1,86 @@
 import { useState } from 'react';
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument, degrees } from 'pdf-lib';
+import type { DocConfig } from '@/components/Tools/Settings/DocumentSettings';
 
 export const usePdfConverter = () => {
-    const [isPdfLoading, setIsPdfLoading] = useState(false);
-    const [pdfLog, setPdfLog] = useState<string>("");
-    const [pdfError, setPdfError] = useState<string | null>(null);
-    const [pdfOutputUrl, setPdfOutputUrl] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [log, setLog] = useState<string[]>([]);
+    const [outputUrls, setOutputUrls] = useState<{name: string, url: string}[]>([]);
 
-    // 複数のPDFを結合する関数
-    const mergePdfs = async (files: File[]) => {
-        setIsPdfLoading(true);
-        setPdfError(null);
-        setPdfOutputUrl(null);
-        setPdfLog("Loading PDFs...");
+    const addLog = (msg: string) => setLog(prev => [...prev, msg]);
+
+    const processDocs = async (files: File[], config: DocConfig) => {
+        setIsLoading(true); setLog([]); setOutputUrls([]);
 
         try {
-            // 1. 空の新しいPDFを作成
-            const mergedPdf = await PDFDocument.create();
-
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                setPdfLog(`Processing ${file.name} (${i + 1}/${files.length})...`);
-
-                try {
-                    // ファイルをArrayBufferとして読み込む
-                    const arrayBuffer = await file.arrayBuffer();
-                    
-                    // 【修正ポイント1】暗号化フラグを無視する設定を追加（誤検知対策）
-                    let pdf = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
-
-                    // 【修正ポイント2: サニタイズ処理】
-                    // 構造エラーを回避するため、一度メモリ上で保存して構造を再構築させる
-                    // これにより "Expected instance of PDFDict" エラーを回避できる場合がある
-                    const sanitizedBytes = await pdf.save();
-                    pdf = await PDFDocument.load(sanitizedBytes);
-                    
-                    // 全ページをコピー
+            // Merge (結合) の場合は全ファイルを1つにする
+            if (config.mode === 'merge') {
+                addLog("Merging PDF files...");
+                const mergedPdf = await PDFDocument.create();
+                
+                for (const file of files) {
+                    const buffer = await file.arrayBuffer();
+                    const pdf = await PDFDocument.load(buffer, { ignoreEncryption: true });
                     const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
-                    
-                    // 新しいPDFに追加
-                    copiedPages.forEach((page) => mergedPdf.addPage(page));
-
-                } catch (innerErr: any) {
-                    console.warn(`Skipping file ${file.name} due to error:`, innerErr);
-                    // 1つのファイルがダメでも、エラーを出して止まるのではなく
-                    // ログに出してスキップするか、ここで全体をエラーにするか選べます。
-                    // 今回は原因特定のためにエラーとして投げます。
-                    throw new Error(`Failed to process "${file.name}": ${innerErr.message}`);
+                    copiedPages.forEach(p => mergedPdf.addPage(p));
                 }
+                
+                // Metadata update
+                if (config.metadataTitle) mergedPdf.setTitle(config.metadataTitle);
+                if (config.metadataAuthor) mergedPdf.setAuthor(config.metadataAuthor);
+                if (config.metadataDate) mergedPdf.setCreationDate(new Date(config.metadataDate));
+
+                const bytes = await mergedPdf.save();
+                const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+                setOutputUrls([{ name: 'merged.pdf', url }]);
+                addLog("Merge complete.");
+
+            } else {
+                // 個別処理 (Rotate, Split, Compress)
+                const results = [];
+                for (const file of files) {
+                    addLog(`Processing: ${file.name}`);
+                    const buffer = await file.arrayBuffer();
+                    const pdf = await PDFDocument.load(buffer, { ignoreEncryption: true });
+                    
+                    // Rotate
+                    if (config.mode === 'rotate') {
+                        pdf.getPages().forEach(p => {
+                            p.setRotation(degrees(p.getRotation().angle + config.rotateAngle));
+                        });
+                        const bytes = await pdf.save();
+                        const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+                        results.push({ name: `rotated_${file.name}`, url });
+                    }
+                    // Split (1ページずつ)
+                    else if (config.mode === 'split') {
+                        const count = pdf.getPageCount();
+                        for (let i = 0; i < count; i++) {
+                            const newPdf = await PDFDocument.create();
+                            const [page] = await newPdf.copyPages(pdf, [i]);
+                            newPdf.addPage(page);
+                            const bytes = await newPdf.save();
+                            const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+                            results.push({ name: `${file.name}_page${i+1}.pdf`, url });
+                        }
+                    }
+                    // Compress (pdf-libでは完全な圧縮は難しいが、メタデータ削除などで軽量化)
+                    else if (config.mode === 'compress') {
+                        // PDFDocument.load/save だけで最適化される場合がある
+                        const bytes = await pdf.save({ useObjectStreams: false }); // 軽量化オプション
+                        const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+                        results.push({ name: `compressed_${file.name}`, url });
+                    }
+                }
+                setOutputUrls(results);
+                addLog("All tasks complete.");
             }
-
-            setPdfLog("Finalizing merged PDF...");
-            
-            // 2. 結合したPDFを保存
-            const pdfBytes = await mergedPdf.save();
-            
-            // 3. ダウンロード用URL生成
-            const blob = new Blob([(pdfBytes as any)], { type: 'application/pdf' });
-            const url = URL.createObjectURL(blob);
-            
-            setPdfOutputUrl(url);
-            setPdfLog(`Successfully merged ${files.length} files!`);
-
-        } catch (err: any) {
-            console.error(err);
-            setPdfError(err.message);
+        } catch (e: any) {
+            addLog("Error: " + e.message);
         } finally {
-            setIsPdfLoading(false);
+            setIsLoading(false);
         }
     };
 
-    return {
-        isPdfLoading,
-        pdfLog,
-        pdfError,
-        pdfOutputUrl,
-        mergePdfs
-    };
+    return { isLoading, log, outputUrls, processDocs };
 };

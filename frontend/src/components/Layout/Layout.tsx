@@ -23,7 +23,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     const [isSidebarOpen, setSidebarOpen] = useState(false);
 
     const navItems = [
-        { path: '/', label: 'Universal Tool', icon: Wand2 },
+        { path: '/', label: 'Universal Converter', icon: Wand2 },
         { path: '/video', label: 'Video Studio', icon: Video },
         { path: '/audio', label: 'Audio Lab', icon: Music }, // 追加
         { path: '/file', label: 'File Master', icon: Archive },
@@ -97,3 +97,4 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
     );
 }
+
