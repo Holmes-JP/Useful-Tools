@@ -6,7 +6,6 @@ import TextTools from './components/Tools/Text/TextTools';
 import TimeTools from './components/Tools/Time/TimeTools';
 import CalculatorTools from './components/Tools/Calculator/CalculatorTools';
 import ImageEditor from './components/Tools/ImageEditor/ImageEditor';
-import DeveloperTools from './components/Tools/Developer/DeveloperTools';
 import VideoStudio from './components/Tools/VideoStudio/VideoStudio';
 import ThumbnailGenerator from './components/Tools/VideoStudio/Views/ThumbnailGenerator';
 import GifMaker from './components/Tools/VideoStudio/Views/GifMaker';
@@ -14,6 +13,13 @@ import AudioLab from './components/Tools/Audio/AudioLab';
 import AudioEditor from './components/Tools/Audio/Views/AudioEditor';
 import Privacy from './components/Pages/Privacy';
 import Feedback from './components/Pages/Feedback';
+
+// Developer Tools
+import DeveloperTools from './components/Tools/Developer/DeveloperTools';
+import GeneratorTools from './components/Tools/Developer/Views/GeneratorTools';
+import WebTools from './components/Tools/Developer/Views/WebTools';
+import HashAnalyzer from './components/Tools/Developer/Views/HashAnalyzer';
+// HashGenerator import removed
 
 // Streamer Tools
 import StreamerDashboard from './components/Tools/Streamer/StreamerDashboard';
@@ -52,7 +58,13 @@ function App() {
               <Route path="/time" element={<TimeTools />} />
               <Route path="/calc" element={<CalculatorTools />} />
               <Route path="/editor" element={<ImageEditor />} />
+              
+              {/* Dev Tools */}
               <Route path="/dev" element={<DeveloperTools />} />
+              <Route path="/dev/generator" element={<GeneratorTools />} />
+              <Route path="/dev/web" element={<WebTools />} />
+              <Route path="/dev/hash" element={<HashAnalyzer />} />
+
               <Route path="/streamer" element={<StreamerDashboard />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/feedback" element={<Feedback />} />
