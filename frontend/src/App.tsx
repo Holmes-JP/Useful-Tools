@@ -1,15 +1,17 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout/Layout';
 import UniversalConverter from './components/Tools/UniversalConverter';
-import AudioLab from './components/Tools/Audio/AudioLab';
-import DocumentStudio from './components/Tools/Document/DocumentStudio';
-import VideoTools from './components/Tools/Video/VideoTools';
 import FileTools from './components/Tools/File/FileTools';
 import TextTools from './components/Tools/Text/TextTools';
 import TimeTools from './components/Tools/Time/TimeTools';
 import CalculatorTools from './components/Tools/Calculator/CalculatorTools';
 import ImageEditor from './components/Tools/ImageEditor/ImageEditor';
 import DeveloperTools from './components/Tools/Developer/DeveloperTools';
+import VideoStudio from './components/Tools/VideoStudio/VideoStudio';
+import ThumbnailGenerator from './components/Tools/VideoStudio/Views/ThumbnailGenerator';
+import GifMaker from './components/Tools/VideoStudio/Views/GifMaker';
+import AudioLab from './components/Tools/Audio/AudioLab';
+import AudioEditor from './components/Tools/Audio/Views/AudioEditor';
 import Privacy from './components/Pages/Privacy';
 import Feedback from './components/Pages/Feedback';
 
@@ -37,9 +39,14 @@ function App() {
           <Layout>
             <Routes>
               <Route path="/" element={<UniversalConverter />} />
+              
+              <Route path="/video" element={<VideoStudio />} />
+              <Route path="/video/thumbnail" element={<ThumbnailGenerator />} />
+              <Route path="/video/gif" element={<GifMaker />} />
+
               <Route path="/audio" element={<AudioLab />} />
-          <Route path="/doc" element={<DocumentStudio />} />
-          <Route path="/video" element={<VideoTools />} />
+              <Route path="/audio/editor" element={<AudioEditor />} />
+
               <Route path="/file" element={<FileTools />} />
               <Route path="/text" element={<TextTools />} />
               <Route path="/time" element={<TimeTools />} />
@@ -73,5 +80,3 @@ function App() {
 }
 
 export default App;
-
-
