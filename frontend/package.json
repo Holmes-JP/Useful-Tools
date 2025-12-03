@@ -20,6 +20,7 @@
     "crypto-js": "^4.2.0",
     "date-fns": "^4.1.0",
     "diff": "^8.0.2",
+    "fflate": "^0.8.2",
     "ip-subnet-calculator": "^2.0.1",
     "japanese-holidays": "^1.0.10",
     "js-yaml": "^4.1.1",

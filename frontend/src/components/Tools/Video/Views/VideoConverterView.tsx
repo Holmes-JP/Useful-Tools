@@ -1,14 +1,25 @@
 import React, { useState } from 'react';
-import { useVideoStudio, VideoOptions } from '@/hooks/useVideoStudio';
+import { useVideoStudio } from '@/hooks/useVideoStudio';
+import VideoSettings, { VideoConfig } from '@/components/Tools/Settings/VideoSettings';
 import { useDropzone } from 'react-dropzone';
-import { Video, Download } from 'lucide-react';
+import { Video, Download, RefreshCw } from 'lucide-react';
 import clsx from 'clsx';
 
 export default function VideoConverterView() {
-    const { isLoading, log, convertUrl, convertVideo } = useVideoStudio();
+    const { loaded, isLoading, log, convertUrl, convertVideo } = useVideoStudio();
     const [file, setFile] = useState<File | null>(null);
-    const [config, setConfig] = useState<VideoOptions>({
-        format: 'mp4', resolution: 'original', mute: false
+    
+    const [config, setConfig] = useState<VideoConfig>({
+        format: 'mp4', 
+        codecVideo: 'default', 
+        codecAudio: 'default', 
+        resolution: 'original', 
+        customWidth: 1920, 
+        customHeight: 1080, 
+        bitrateVideo: '', 
+        bitrateAudio: '', 
+        mute: false, 
+        frameRate: 0 
     });
 
     const onDrop = (files: File[]) => { if(files.length > 0) setFile(files[0]); };
@@ -18,36 +29,29 @@ export default function VideoConverterView() {
         <div className="space-y-6 animate-fade-in-up">
             <div {...getRootProps()} className="border-3 border-dashed border-gray-700 rounded-xl p-8 text-center hover:bg-gray-800 cursor-pointer">
                 <input {...getInputProps()} />
-                {file ? <p className="text-primary-400 font-bold">{file.name}</p> : <div className="text-gray-500 flex flex-col items-center"><Video size={32} className="mb-2"/>Drop Video</div>}
+                {file ? <p className="text-primary-400 font-bold">{file.name}</p> : <div className="text-gray-500 flex flex-col items-center"><Video size={32} className="mb-2"/>Drop Video to Convert</div>}
             </div>
 
             {file && (
-                <div className="bg-surface border border-gray-700 p-6 rounded-xl space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="text-xs text-gray-500 block mb-1">Format</label>
-                            <select value={config.format} onChange={e => setConfig({...config, format: e.target.value as any})} className="w-full bg-gray-900 text-white rounded p-2 border border-gray-600">
-                                <option value="mp4">MP4</option><option value="webm">WebM</option><option value="mp3">MP3 (Audio)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="text-xs text-gray-500 block mb-1">Resolution</label>
-                            <select value={config.resolution} onChange={e => setConfig({...config, resolution: e.target.value as any})} className="w-full bg-gray-900 text-white rounded p-2 border border-gray-600">
-                                <option value="original">Original</option><option value="1080p">1080p</option><option value="720p">720p</option>
-                            </select>
-                        </div>
-                    </div>
-                    <button onClick={() => convertVideo(file, config)} disabled={isLoading} className="w-full bg-primary-500 text-black font-bold py-3 rounded-xl hover:bg-primary-400 disabled:opacity-50">
-                        {isLoading ? 'Converting...' : 'Start Conversion'}
+                <div className="space-y-6">
+                    <VideoSettings config={config} onChange={setConfig} />
+                    
+                    <button 
+                        onClick={() => convertVideo(file, config)} 
+                        disabled={isLoading || !loaded} 
+                        className={clsx("w-full bg-primary-500 text-black font-bold py-4 rounded-xl hover:bg-primary-400 disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg", isLoading && "cursor-wait")}
+                    >
+                        {isLoading ? <><RefreshCw className="animate-spin"/> Processing...</> : loaded ? 'Start Conversion' : 'Loading Engine...'}
                     </button>
                 </div>
             )}
             
-            {isLoading && <div className="bg-gray-900 p-2 rounded text-xs text-green-400 font-mono truncate">{log}</div>}
+            {isLoading && <div className="bg-gray-900 p-3 rounded font-mono text-xs text-green-400 h-32 overflow-y-auto custom-scrollbar border border-gray-800">{log}</div>}
             
             {convertUrl && (
-                <div className="text-center">
-                    <a href={convertUrl} download={`converted.${config.format}`} className="inline-flex items-center gap-2 bg-green-600 text-white px-6 py-3 rounded-full font-bold hover:bg-green-500">
+                <div className="text-center p-6 bg-gray-800 rounded-xl border border-gray-700 animate-fade-in-up">
+                    <p className="text-white font-bold mb-4">Conversion Complete!</p>
+                    <a href={convertUrl} download={`converted.${config.format}`} className="inline-flex items-center gap-2 bg-green-600 text-white px-8 py-3 rounded-full font-bold hover:bg-green-500 shadow-lg transition">
                         <Download size={20} /> Download Result
                     </a>
                 </div>

@@ -1,74 +1,87 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile, toBlobURL } from '@ffmpeg/util';
-import { VideoConfig } from '../components/Tools/Settings/VideoSettings';
+import type { VideoConfig } from '@/components/Tools/Settings/VideoSettings';
 
 export const useVideoConverter = () => {
-    const [loaded, setLoaded] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [log, setLog] = useState<string>("Ready");
-    const [error, setError] = useState<string | null>(null);
-    const [outputUrl, setOutputUrl] = useState<string | null>(null);
+    const [log, setLog] = useState<string[]>([]);
+    const [outputUrls, setOutputUrls] = useState<{name: string, url: string}[]>([]);
     const ffmpegRef = useRef(new FFmpeg());
 
+    const addLog = (msg: string) => setLog(prev => [...prev.slice(-49), msg]);
+
     const load = useCallback(async () => {
-        if (ffmpegRef.current.loaded) {
-            setLoaded(true);
-            return;
-        }
-        setIsLoading(true);
+        const ffmpeg = ffmpegRef.current;
+        if (ffmpeg.loaded) return;
+        ffmpeg.on('log', ({ message }) => addLog(message));
         try {
-            const baseURL = '/ffmpeg';
-            await ffmpegRef.current.load({
-                coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-                wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+            await ffmpeg.load({
+                coreURL: await toBlobURL('/ffmpeg/ffmpeg-core.js', 'text/javascript'),
+                wasmURL: await toBlobURL('/ffmpeg/ffmpeg-core.wasm', 'application/wasm'),
             });
-            setLoaded(true);
-            setLog("Engine Loaded");
-        } catch (err: any) {
-            console.error(err);
-            setError("Failed to load video engine.");
-        } finally {
-            setIsLoading(false);
-        }
+            addLog("FFmpeg loaded.");
+        } catch (err: any) { addLog("Load Error: " + err.message); }
     }, []);
 
     useEffect(() => { load(); }, [load]);
 
-    const convertVideo = async (file: File, config: VideoConfig) => {
-        setIsLoading(true);
-        setError(null);
-        setOutputUrl(null);
-        setLog("Processing...");
-        
+    const convertVideos = async (files: File[], config: VideoConfig) => {
+        const ffmpeg = ffmpegRef.current;
+        setIsLoading(true); setLog([]); setOutputUrls([]);
+
         try {
-            const ffmpeg = ffmpegRef.current;
-            const inputName = 'input' + file.name.substring(file.name.lastIndexOf('.'));
-            const outputName = `output.${config.format}`;
+            const results = [];
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                addLog(`Converting ${file.name}...`);
+                
+                const inputName = `in_${i}`;
+                await ffmpeg.writeFile(inputName, await fetchFile(file));
+                const args = ['-i', inputName, '-threads', '0', '-map_metadata', '-1'];
 
-            await ffmpeg.writeFile(inputName, await fetchFile(file));
-            
-            const args = ['-i', inputName];
-            if (config.mute) args.push('-an');
-            if (config.resolution !== 'original') {
-                const scale = config.resolution.replace('p', '');
-                args.push('-vf', `scale=-2:${scale}`);
+                // 修正: 型エラー回避のため mp3/wav は除外して処理
+                if (config.format !== 'mp3' && config.format !== 'wav') {
+                    if (config.codecVideo !== 'default') args.push('-c:v', config.codecVideo);
+                    if (config.bitrateVideo) args.push('-b:v', config.bitrateVideo);
+                    if (config.frameRate > 0) args.push('-r', config.frameRate.toString());
+                    
+                    if (config.resolution !== 'original') {
+                        const scale = config.resolution === 'custom' 
+                            ? `${config.customWidth}:${config.customHeight}` 
+                            : config.resolution === '1080p' ? '1920:-2' 
+                            : config.resolution === '720p' ? '1280:-2' 
+                            : '854:-2';
+                        args.push('-vf', `scale=${scale}`);
+                    }
+                    if (config.format !== 'gif') args.push('-preset', 'ultrafast');
+                } else {
+                    args.push('-vn');
+                }
+
+                if (config.mute) args.push('-an');
+                else if (config.codecAudio !== 'default') args.push('-c:a', config.codecAudio);
+                if (config.bitrateAudio) args.push('-b:a', config.bitrateAudio);
+
+                const outName = `out_${i}.${config.format}`;
+                args.push(outName);
+                
+                await ffmpeg.exec(args);
+                const data = await ffmpeg.readFile(outName);
+                const url = URL.createObjectURL(new Blob([(data as any)]));
+                results.push({ name: `${file.name.split('.')[0]}.${config.format}`, url });
+                
+                await ffmpeg.deleteFile(inputName);
+                await ffmpeg.deleteFile(outName);
             }
-            args.push(outputName);
-
-            await ffmpeg.exec(args);
-            
-            const data = await ffmpeg.readFile(outputName);
-            // Explicit cast to fix TS error
-            const url = URL.createObjectURL(new Blob([(data as any)], { type: `video/${config.format}` }));
-            setOutputUrl(url);
-            setLog("Conversion complete!");
-        } catch(e: any) {
-            setError(e.message);
+            setOutputUrls(results);
+            addLog("All Done!");
+        } catch (e: any) {
+            addLog("Error: " + e.message);
         } finally {
             setIsLoading(false);
         }
     };
 
-    return { loaded, isLoading, log, error, outputUrl, convertVideo };
+    return { isLoading, log, outputUrls, convertVideos, load };
 };

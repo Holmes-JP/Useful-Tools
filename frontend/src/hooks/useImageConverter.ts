@@ -1,40 +1,55 @@
 import { useState } from 'react';
 import imageCompression from 'browser-image-compression';
-import { ImageConfig } from '../components/Tools/Settings/ImageSettings';
+import type { ImageConfig } from '@/components/Tools/Settings/ImageSettings';
 
 export const useImageConverter = () => {
-    const [isImageLoading, setIsLoading] = useState(false);
-    const [imageLog, setLog] = useState<string>("");
-    const [imageError, setError] = useState<string | null>(null);
-    const [imageOutputUrl, setOutputUrl] = useState<string | null>(null);
+    const [isImageLoading, setIsImageLoading] = useState(false);
+    const [log, setLog] = useState<string[]>([]);
+    // 修正: outputUrls を追加
+    const [outputUrls, setOutputUrls] = useState<{name: string, url: string}[]>([]);
+
+    const addLog = (msg: string) => setLog(prev => [...prev.slice(-19), msg]);
 
     const compressImages = async (files: File[], config: ImageConfig) => {
-        setIsLoading(true);
-        setLog("Compressing...");
-        setError(null);
-        setOutputUrl(null);
+        setIsImageLoading(true); setLog([]); setOutputUrls([]);
 
         try {
-            const file = files[0];
-            const options = {
-                maxSizeMB: 1,
-                maxWidthOrHeight: config.maxWidth > 0 ? config.maxWidth : undefined,
-                useWebWorker: true,
-                fileType: config.format === 'original' ? undefined : `image/${config.format}`,
-                initialQuality: config.quality
-            };
+            const results = [];
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                addLog(`Processing: ${file.name}`);
 
-            const compressedFile = await imageCompression(file, options);
-            const url = URL.createObjectURL(compressedFile);
-            
-            setOutputUrl(url);
-            setLog(`Done! ${(compressedFile.size / 1024).toFixed(1)} KB`);
-        } catch (error: any) {
-            setError(error.message);
+                const options = {
+                    maxSizeMB: 1,
+                    useWebWorker: true,
+                    fileType: config.format === 'original' ? undefined : `image/${config.format}`,
+                    initialQuality: config.quality,
+                    alwaysKeepResolution: true
+                };
+
+                let outputBlob: Blob = file;
+                let isProcessed = false;
+                try {
+                    const compressedFile = await imageCompression(file, options);
+                    if (compressedFile.size < file.size || config.format !== 'original') {
+                        outputBlob = compressedFile;
+                        isProcessed = true;
+                    }
+                } catch (e) {}
+
+                const url = URL.createObjectURL(outputBlob);
+                const ext = config.format === 'original' ? file.name.split('.').pop() || 'jpg' : config.format;
+                const name = `${file.name.split('.')[0]}_${isProcessed ? 'min' : 'copy'}.${ext}`;
+                results.push({ name, url });
+            }
+            setOutputUrls(results);
+            addLog("All processed!");
+        } catch (err: any) {
+            addLog("Error: " + err.message);
         } finally {
-            setIsLoading(false);
+            setIsImageLoading(false);
         }
     };
 
-    return { isImageLoading, imageLog, imageError, imageOutputUrl, compressImages };
+    return { isImageLoading, log, outputUrls, compressImages };
 };
