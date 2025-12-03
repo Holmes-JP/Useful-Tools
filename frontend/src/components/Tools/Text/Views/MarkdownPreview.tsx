@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { FileCode, Eye } from 'lucide-react';
-import clsx from 'clsx';
 
 export default function MarkdownPreview() {
     const [markdown, setMarkdown] = useState('# Hello, Markdown!\n\nThis tool supports **GFM** (GitHub Flavored Markdown).\n\n- [x] List items\n- [ ] Task lists\n\n```js\nconsole.log("Code blocks");\n```\n\n| Header | Header |\n| --- | --- |\n| Cell | Cell |');

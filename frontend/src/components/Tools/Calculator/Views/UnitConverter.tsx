@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { evaluate, format } from 'mathjs';
 import { ArrowRightLeft, Copy } from 'lucide-react';
 import clsx from 'clsx';

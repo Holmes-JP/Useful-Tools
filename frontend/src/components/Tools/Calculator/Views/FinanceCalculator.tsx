@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { BadgePercent, Coins } from 'lucide-react';
 import clsx from 'clsx';
 

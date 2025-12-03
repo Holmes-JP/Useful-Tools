@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useArchiver, ArchiveConfig } from '@/hooks/useArchiver';
 import { Archive, Download, FileArchive, File as FileIcon, Lock, Settings2, FolderOutput } from 'lucide-react';

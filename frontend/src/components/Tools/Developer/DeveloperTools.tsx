@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Code2, Globe, Network, Lock, Terminal, Hash, Search } from 'lucide-react';
+import { Globe, Network, Terminal, Search } from 'lucide-react';
 
 export default function DeveloperTools() {
     const tools = [

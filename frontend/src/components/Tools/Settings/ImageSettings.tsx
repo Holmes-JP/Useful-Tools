@@ -1,4 +1,4 @@
-import React from 'react';
+
 
 export type ImageConfig = {
     format: 'original' | 'jpeg' | 'png' | 'webp';

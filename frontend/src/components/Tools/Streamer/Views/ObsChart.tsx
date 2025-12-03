@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 export default function ObsChart() {
@@ -25,7 +25,6 @@ export default function ObsChart() {
             <div className="space-y-4 w-full max-w-3xl">
                 {labels.map((label, i) => {
                     const val = data[i] || 0;
-                    const percent = (val / maxVal) * 100;
                     return (
                         <div key={i} className="relative">
                             <div className="flex justify-between text-white font-bold mb-1 drop-shadow-sm">

@@ -1,4 +1,4 @@
-import React from 'react';
+
 
 export type VideoConfig = {
     format: 'mp4' | 'webm' | 'gif';

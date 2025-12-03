@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { diffLines, Change } from 'diff';
-import { Split, ArrowRight } from 'lucide-react';
+import { Split } from 'lucide-react';
 import clsx from 'clsx';
 
 export default function DiffViewer() {

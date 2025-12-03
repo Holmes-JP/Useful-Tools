@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { createWorker } from 'tesseract.js';
 import { useDropzone } from 'react-dropzone';
 import { ScanText, Copy, Loader2, Image as ImageIcon } from 'lucide-react';

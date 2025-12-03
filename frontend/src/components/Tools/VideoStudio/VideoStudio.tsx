@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Image, Film, Video } from 'lucide-react';
+import { Image, Film } from 'lucide-react';
 
 export default function VideoStudio() {
     return (

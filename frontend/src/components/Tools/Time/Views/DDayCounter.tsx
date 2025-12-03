@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { differenceInDays, differenceInHours, parseISO } from 'date-fns';
+import { useState, useEffect } from 'react';
+import { differenceInDays, parseISO } from 'date-fns';
 import { CalendarHeart, Plus, Trash2 } from 'lucide-react';
 
 type Event = {

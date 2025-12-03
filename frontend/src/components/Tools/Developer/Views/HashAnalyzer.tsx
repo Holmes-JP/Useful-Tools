@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useHashAnalyzer } from '../../../../hooks/useHashAnalyzer';
-import { Search, ShieldAlert, CheckCircle2, HelpCircle } from 'lucide-react';
+import { Search, CheckCircle2, HelpCircle } from 'lucide-react';
 
 export default function HashAnalyzer() {
     const [input, setInput] = useState('');
