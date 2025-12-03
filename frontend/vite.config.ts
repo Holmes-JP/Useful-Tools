@@ -10,12 +10,12 @@ export default defineConfig({
     emptyOutDir: true,
   },
   optimizeDeps: {
-    // FFmpeg関連を除外
     exclude: ['@ffmpeg/ffmpeg', '@ffmpeg/util'],
   },
   server: {
     host: true,
     port: 5173,
+    // 開発サーバーでもヘッダーを付与
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin',
       'Cross-Origin-Embedder-Policy': 'require-corp',
@@ -25,7 +25,5 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
-    // 【重要】ライブラリが迷子にならないよう、Reactを強制的に一本化する
-    dedupe: ['react', 'react-dom'],
   },
 })
