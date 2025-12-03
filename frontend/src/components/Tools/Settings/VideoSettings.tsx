@@ -1,7 +1,7 @@
 
 
 export type VideoConfig = {
-    format: 'mp4' | 'webm' | 'gif';
+    format: 'mp4' | 'mov' | 'avi' | 'mkv' | 'webm' | 'flv' | 'wmv' | 'm4v' | 'gif' | 'mp3' | 'aac' | 'wav' | 'ogg';
     resolution: 'original' | '1080p' | '720p' | '480p';
     mute: boolean;
 };
@@ -13,17 +13,35 @@ type Props = {
 
 export default function VideoSettings({ config, onChange }: Props) {
     return (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-800 rounded-lg border border-gray-700">
+        <div className="space-y-3">
+            <h3 className="text-lg font-bold text-white">Video File Settings</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-800 rounded-lg border border-gray-700">
             <div>
-                <label className="block text-xs text-gray-400 mb-1">Format</label>
+                <label className="block text-xs text-gray-400 mb-1">Output Format</label>
                 <select 
                     value={config.format}
                     onChange={(e) => onChange({ ...config, format: e.target.value as any })}
                     className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm text-white"
                 >
-                    <option value="mp4">MP4 (H.264)</option>
-                    <option value="webm">WebM (VP9)</option>
-                    <option value="gif">GIF (Animated)</option>
+                    <optgroup label="Video">
+                        <option value="mp4">MP4 (H.264)</option>
+                        <option value="mov">MOV (QuickTime)</option>
+                        <option value="avi">AVI</option>
+                        <option value="mkv">MKV (Matroska)</option>
+                        <option value="webm">WebM (VP9)</option>
+                        <option value="flv">FLV (Flash)</option>
+                        <option value="wmv">WMV (Windows Media)</option>
+                        <option value="m4v">M4V (iTunes)</option>
+                    </optgroup>
+                    <optgroup label="Image">
+                        <option value="gif">GIF (Animated)</option>
+                    </optgroup>
+                    <optgroup label="Audio">
+                        <option value="mp3">MP3 (Audio Only)</option>
+                        <option value="aac">AAC (Audio Only)</option>
+                        <option value="wav">WAV (Audio Only)</option>
+                        <option value="ogg">OGG (Audio Only)</option>
+                    </optgroup>
                 </select>
             </div>
             <div>
@@ -49,6 +67,7 @@ export default function VideoSettings({ config, onChange }: Props) {
                     />
                     <span className="text-sm text-gray-300">Mute Audio</span>
                 </label>
+            </div>
             </div>
         </div>
     );

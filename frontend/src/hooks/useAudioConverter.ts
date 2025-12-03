@@ -11,10 +11,13 @@ export const useAudioConverter = () => {
         setIsLoading(true);
         setLog("Mock converting audio...");
         // Mock implementation to pass build
-        setTimeout(() => {
-            setIsLoading(false);
-            setLog("Done (Mock)!");
-        }, 1000);
+        return new Promise<string | null>((resolve) => {
+            setTimeout(() => {
+                setIsLoading(false);
+                setLog("Done (Mock)!");
+                resolve(null);
+            }, 1000);
+        });
     };
 
     return { isAudioLoading, audioLog, audioError, audioOutputUrl, convertAudio };

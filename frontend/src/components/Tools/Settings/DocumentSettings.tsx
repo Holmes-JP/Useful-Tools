@@ -26,7 +26,9 @@ export default function DocumentSettings({ config, onChange, inputType }: Props)
     }, [inputType]);
 
     return (
-        <div className="space-y-4 p-4 bg-gray-800 rounded-lg border border-gray-700">
+        <div className="space-y-3">
+            <h3 className="text-lg font-bold text-white">Document File Settings</h3>
+            <div className="space-y-4 p-4 bg-gray-800 rounded-lg border border-gray-700">
             <div>
                 <label className="block text-xs text-gray-400 mb-1">Mode</label>
                 <select
@@ -101,6 +103,7 @@ export default function DocumentSettings({ config, onChange, inputType }: Props)
                         className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm text-white"
                     />
                 </div>
+            </div>
             </div>
         </div>
     );

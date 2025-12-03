@@ -17,17 +17,27 @@ export const useVideoConverter = () => {
             return;
         }
         setIsLoading(true);
+        setLog("Loading video engine...");
         try {
             const baseURL = '/ffmpeg';
-            await ffmpegRef.current.load({
+            const ffmpeg = ffmpegRef.current;
+            
+            // ログを有効化
+            ffmpeg.on('log', ({ message }) => {
+                console.log('FFmpeg:', message);
+                setLog(prev => prev + '\n' + message);
+            });
+            
+            await ffmpeg.load({
                 coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
                 wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
             });
             setLoaded(true);
-            setLog("Engine Loaded");
+            setLog("Engine Loaded - Ready to process videos");
         } catch (err: any) {
-            console.error(err);
-            setError("Failed to load video engine.");
+            console.error("FFmpeg load error:", err);
+            setError("Failed to load video engine: " + (err.message || "Unknown error"));
+            setLog("Failed to load video engine");
         } finally {
             setIsLoading(false);
         }
@@ -36,35 +46,82 @@ export const useVideoConverter = () => {
     useEffect(() => { load(); }, [load]);
 
     const convertVideo = async (file: File, config: VideoConfig) => {
+        console.log('convertVideo called', { loaded, file: file.name, config });
+        
+        if (!loaded) {
+            const errorMsg = "Video engine is still loading. Please wait...";
+            setError(errorMsg);
+            setLog(errorMsg);
+            return null;
+        }
+        
         setIsLoading(true);
         setError(null);
         setOutputUrl(null);
-        setLog("Processing...");
+        setLog(`Processing ${file.name}...`);
         
         try {
             const ffmpeg = ffmpegRef.current;
             const inputName = 'input' + file.name.substring(file.name.lastIndexOf('.'));
             const outputName = `output.${config.format}`;
 
+            console.log('Writing file to FFmpeg:', inputName);
             await ffmpeg.writeFile(inputName, await fetchFile(file));
             
             const args = ['-i', inputName];
-            if (config.mute) args.push('-an');
+            
+            // オーディオ処理
+            if (config.mute) {
+                args.push('-an');
+            }
+            
+            // 解像度処理
             if (config.resolution !== 'original') {
                 const scale = config.resolution.replace('p', '');
                 args.push('-vf', `scale=-2:${scale}`);
             }
+            
+            // MOV形式の場合、コーデックを明示的に指定
+            if (config.format === 'mov') {
+                args.push('-c:v', 'libx264');
+                if (!config.mute) {
+                    args.push('-c:a', 'aac');
+                }
+            }
+            
+            // 出力ファイル名
             args.push(outputName);
 
+            console.log('Executing FFmpeg with args:', args);
+            setLog(`Converting with: ${args.join(' ')}`);
             await ffmpeg.exec(args);
             
+            console.log('Reading output file:', outputName);
             const data = await ffmpeg.readFile(outputName);
-            // Explicit cast to fix TS error
-            const url = URL.createObjectURL(new Blob([(data as any)], { type: `video/${config.format}` }));
+            console.log('Output file data type:', typeof data, 'length:', data?.length);
+            
+            // ファイルをクリーンアップ
+            try {
+                await ffmpeg.deleteFile(inputName);
+                await ffmpeg.deleteFile(outputName);
+            } catch (cleanupError) {
+                console.warn('Cleanup error (non-critical):', cleanupError);
+            }
+            
+            // Uint8Array を Blob に変換
+            const mimeType = config.format === 'mov' ? 'video/quicktime' : `video/${config.format}`;
+            const blob = new Blob([data as BlobPart], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            
             setOutputUrl(url);
             setLog("Conversion complete!");
+            console.log('Conversion successful');
+            return url;
         } catch(e: any) {
-            setError(e.message);
+            console.error("Video conversion error:", e);
+            setError(e.message || "Video conversion failed");
+            setLog("Error: " + (e.message || "Unknown error"));
+            return null;
         } finally {
             setIsLoading(false);
         }

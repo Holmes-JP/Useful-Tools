@@ -13,9 +13,11 @@ type Props = {
 
 export default function ImageSettings({ config, onChange }: Props) {
     return (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-800 rounded-lg border border-gray-700">
+        <div className="space-y-3">
+            <h3 className="text-lg font-bold text-white">Image File Settings</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-800 rounded-lg border border-gray-700">
             <div>
-                <label className="block text-xs text-gray-400 mb-1">Format</label>
+                <label className="block text-xs text-gray-400 mb-1">Output Format</label>
                 <select 
                     value={config.format}
                     onChange={(e) => onChange({ ...config, format: e.target.value as any })}
@@ -45,6 +47,7 @@ export default function ImageSettings({ config, onChange }: Props) {
                     onChange={(e) => onChange({ ...config, maxWidth: Number(e.target.value) })}
                     className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm text-white placeholder-gray-500"
                 />
+            </div>
             </div>
         </div>
     );

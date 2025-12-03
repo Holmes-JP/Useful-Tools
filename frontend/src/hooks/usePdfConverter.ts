@@ -25,12 +25,15 @@ export const usePdfConverter = () => {
             
             // Fix: 'pdfBytes as any' to bypass Uint8Array/BlobPart type mismatch
             const blob = new Blob([pdfBytes as any], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob);
             
-            setOutputUrl(URL.createObjectURL(blob));
+            setOutputUrl(url);
             setLog("Merged successfully!");
+            return url;
         } catch (e: any) {
             console.error(e);
             setError(e.message);
+            return null;
         } finally {
             setIsLoading(false);
         }
