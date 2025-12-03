@@ -19,7 +19,7 @@ export default function UniversalConverter() {
     const { isLoading: isVideoLoading, log: videoLog, error: videoError, convertVideo } = useVideoConverter();
     const { isImageLoading, imageLog, imageError, compressImages } = useImageConverter();
     const { isPdfLoading, pdfLog, pdfError, mergePdfs } = usePdfConverter();
-    const { isAudioLoading, audioLog, audioError, convertAudio } = useAudioConverter();
+    const { isAudioLoading, audioLog, audioError } = useAudioConverter();
 
     const [files, setFiles] = useState<File[]>([]);
     
@@ -36,16 +36,87 @@ export default function UniversalConverter() {
     const [videoConfig, setVideoConfig] = useState<VideoConfig>({
         format: 'mp4',
         resolution: 'original',
-        mute: false
+        mute: false,
+        videoCodec: 'libx264',
+        trimStart: '0',
+        trimEnd: '',
+        frameRate: 'original',
+        videoBitrate: 'original',
+        aspectRatio: 'original',
+        rotate: '0',
+        brightness: '0',
+        contrast: '0',
+        saturation: '1',
+        deinterlace: false,
+        pixelFormat: 'original',
+        audioCodec: 'aac',
+        audioBitrate: '192k',
+        audioVolume: '1.0',
+        audioSampleRate: 'original',
+        audioChannels: 'original',
+        audioNormalize: false,
+        audioFadeIn: '',
+        audioFadeOut: '',
+        gifWidth: '',
+        gifLoop: '0',
+        gifFps: '10',
+        gifCompression: '1',
+        gifTransparent: false
     });
     const [imageConfig, setImageConfig] = useState<ImageConfig>({
         format: 'original',
         quality: 0.8,
-        maxWidth: 0
+        maxWidth: 0,
+        resolution: 'original',
+        videoCodec: 'libx264',
+        trimStart: '0',
+        trimEnd: '',
+        frameRate: 'original',
+        videoBitrate: 'original',
+        aspectRatio: 'original',
+        rotate: '0',
+        brightness: '0',
+        contrast: '0',
+        saturation: '1',
+        deinterlace: false,
+        pixelFormat: 'original',
+        audioCodec: 'aac',
+        audioBitrate: '192k',
+        audioVolume: '1.0',
+        audioSampleRate: 'original',
+        audioChannels: 'original',
+        audioNormalize: false,
+        audioFadeIn: '',
+        audioFadeOut: '',
+        gifWidth: '',
+        gifLoop: '0',
+        gifFps: '10',
+        gifCompression: '1',
+        gifTransparent: false
     });
     const [audioConfig, setAudioConfig] = useState<AudioConfig>({
         format: 'mp3',
-        bitrate: '192k'
+        bitrate: '192k',
+        audioCodec: 'aac',
+        audioVolume: '1.0',
+        audioSampleRate: 'original',
+        audioChannels: 'original',
+        audioNormalize: false,
+        audioFadeIn: '',
+        audioFadeOut: '',
+        trimStart: '0',
+        trimEnd: '',
+        resolution: 'original',
+        videoCodec: 'libx264',
+        frameRate: 'original',
+        videoBitrate: 'original',
+        aspectRatio: 'original',
+        rotate: '0',
+        brightness: '0',
+        contrast: '0',
+        saturation: '1',
+        deinterlace: false,
+        pixelFormat: 'original'
     });
     const [docConfig, setDocConfig] = useState<DocConfig>({
         format: 'pdf',
@@ -61,10 +132,18 @@ export default function UniversalConverter() {
     const detectMode = useMemo(() => {
         if (files.length === 0) return 'idle';
         const file = files[0];
-        if (file.type.startsWith('video')) return 'video-single';
-        if (file.type.startsWith('image')) return 'image-batch';
-        if (file.type.startsWith('audio')) return 'audio-single';
-        if (file.type === 'application/pdf' || file.type === 'text/plain') return 'document';
+        const type = file.type || '';
+        const ext = file.name.split('.').pop()?.toLowerCase() || '';
+
+        const videoExt = ['mp4', 'mov', 'mkv', 'avi', 'webm', 'wmv', 'flv', 'm4v'];
+        const imageExt = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'tiff', 'svg'];
+        const audioExt = ['mp3', 'aac', 'm4a', 'wav', 'ogg', 'flac', 'wma', 'aiff'];
+        const docExt = ['pdf', 'txt'];
+
+        if (type.startsWith('video') || videoExt.includes(ext)) return 'video-single';
+        if (type.startsWith('image') || imageExt.includes(ext)) return 'image-batch';
+        if (type.startsWith('audio') || audioExt.includes(ext)) return 'audio-single';
+        if (type === 'application/pdf' || type === 'text/plain' || docExt.includes(ext)) return 'document';
         return 'unknown';
     }, [files]);
 
@@ -115,9 +194,114 @@ export default function UniversalConverter() {
                 if (detectMode === 'video-single') {
                     resultUrl = await convertVideo(file, videoConfig);
                 } else if (detectMode === 'image-batch') {
-                    resultUrl = await compressImages([file], imageConfig);
+                    // 画像の場合、ビデオ/GIF形式ならconvertVideoを使用
+                    const isVideoOrGif = ['mp4', 'mov', 'avi', 'mkv', 'webm', 'flv', 'wmv', 'm4v', 'gif'].includes(imageConfig.format);
+                    if (isVideoOrGif) {
+                        // ImageConfigをVideoConfigに変換
+                        const videoConfigFromImage = {
+                            format: imageConfig.format as any,
+                            resolution: imageConfig.resolution || 'original',
+                            mute: false,
+                            videoCodec: imageConfig.videoCodec || 'libx264',
+                            trimStart: imageConfig.trimStart || '0',
+                            trimEnd: imageConfig.trimEnd || '',
+                            frameRate: imageConfig.frameRate || 'original',
+                            videoBitrate: imageConfig.videoBitrate || 'original',
+                            aspectRatio: imageConfig.aspectRatio || 'original',
+                            rotate: imageConfig.rotate || '0',
+                            brightness: imageConfig.brightness || '0',
+                            contrast: imageConfig.contrast || '0',
+                            saturation: imageConfig.saturation || '1',
+                            deinterlace: imageConfig.deinterlace || false,
+                            pixelFormat: imageConfig.pixelFormat || 'original',
+                            audioCodec: imageConfig.audioCodec || 'aac',
+                            audioBitrate: imageConfig.audioBitrate || '192k',
+                            audioVolume: imageConfig.audioVolume || '1.0',
+                            audioSampleRate: imageConfig.audioSampleRate || 'original',
+                            audioChannels: imageConfig.audioChannels || 'original',
+                            audioNormalize: imageConfig.audioNormalize || false,
+                            audioFadeIn: imageConfig.audioFadeIn || '',
+                            audioFadeOut: imageConfig.audioFadeOut || '',
+                            gifWidth: imageConfig.gifWidth || '',
+                            gifLoop: imageConfig.gifLoop || '0',
+                            gifFps: imageConfig.gifFps || '10',
+                            gifCompression: imageConfig.gifCompression || '1',
+                            gifTransparent: imageConfig.gifTransparent || false
+                        };
+                        resultUrl = await convertVideo(file, videoConfigFromImage);
+                    } else {
+                        resultUrl = await compressImages([file], imageConfig);
+                    }
                 } else if (detectMode === 'audio-single') {
-                    resultUrl = await convertAudio(file, audioConfig);
+                    // 音声の場合、ビデオ形式ならconvertVideoを使用
+                    const isVideo = ['mp4', 'mov', 'avi', 'mkv', 'webm', 'flv', 'wmv', 'm4v'].includes(audioConfig.format);
+                    if (isVideo) {
+                        // AudioConfigをVideoConfigに変換
+                        const videoConfigFromAudio = {
+                            format: audioConfig.format as any,
+                            resolution: audioConfig.resolution || 'original',
+                            mute: false,
+                            videoCodec: audioConfig.videoCodec || 'libx264',
+                            trimStart: audioConfig.trimStart || '0',
+                            trimEnd: audioConfig.trimEnd || '',
+                            frameRate: audioConfig.frameRate || 'original',
+                            videoBitrate: audioConfig.videoBitrate || 'original',
+                            aspectRatio: audioConfig.aspectRatio || 'original',
+                            rotate: audioConfig.rotate || '0',
+                            brightness: audioConfig.brightness || '0',
+                            contrast: audioConfig.contrast || '0',
+                            saturation: audioConfig.saturation || '1',
+                            deinterlace: audioConfig.deinterlace || false,
+                            pixelFormat: audioConfig.pixelFormat || 'original',
+                            audioCodec: audioConfig.audioCodec || 'aac',
+                            audioBitrate: (audioConfig.bitrate || '192k') as any,
+                            audioVolume: audioConfig.audioVolume || '1.0',
+                            audioSampleRate: audioConfig.audioSampleRate || 'original',
+                            audioChannels: audioConfig.audioChannels || 'original',
+                            audioNormalize: audioConfig.audioNormalize || false,
+                            audioFadeIn: audioConfig.audioFadeIn || '',
+                            audioFadeOut: audioConfig.audioFadeOut || '',
+                            gifWidth: '',
+                            gifLoop: '0',
+                            gifFps: '10',
+                            gifCompression: '1' as const,
+                            gifTransparent: false
+                        };
+                        resultUrl = await convertVideo(file, videoConfigFromAudio);
+                    } else {
+                        // 音声形式の場合もconvertVideoを使用（既にAudio専用フォーマット対応済み）
+                        const audioOnlyConfig = {
+                            format: audioConfig.format as any,
+                            resolution: 'original' as const,
+                            mute: false,
+                            videoCodec: 'libx264' as const,
+                            trimStart: audioConfig.trimStart || '0',
+                            trimEnd: audioConfig.trimEnd || '',
+                            frameRate: 'original' as const,
+                            videoBitrate: 'original' as const,
+                            aspectRatio: 'original' as const,
+                            rotate: '0' as const,
+                            brightness: '0',
+                            contrast: '0',
+                            saturation: '1',
+                            deinterlace: false,
+                            pixelFormat: 'original' as const,
+                            audioCodec: audioConfig.audioCodec || 'aac',
+                            audioBitrate: (audioConfig.bitrate || '192k') as any,
+                            audioVolume: audioConfig.audioVolume || '1.0',
+                            audioSampleRate: audioConfig.audioSampleRate || 'original',
+                            audioChannels: audioConfig.audioChannels || 'original',
+                            audioNormalize: audioConfig.audioNormalize || false,
+                            audioFadeIn: audioConfig.audioFadeIn || '',
+                            audioFadeOut: audioConfig.audioFadeOut || '',
+                            gifWidth: '',
+                            gifLoop: '0',
+                            gifFps: '10',
+                            gifCompression: '1' as const,
+                            gifTransparent: false
+                        };
+                        resultUrl = await convertVideo(file, audioOnlyConfig);
+                    }
                 } else if (detectMode === 'document') {
                     resultUrl = await mergePdfs([file]);
                 }
