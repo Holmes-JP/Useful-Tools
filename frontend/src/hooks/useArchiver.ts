@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import * as zip from '@zip.js/zip.js';
+import * as fflate from 'fflate';
 
 export type ArchiveFile = {
     name: string;
@@ -22,192 +22,182 @@ export const useArchiver = () => {
 
     const addLog = (msg: string) => setArchiveLog(msg);
 
-    // 暗号化チェック (zip.js版)
     const checkEncryption = async (file: File) => {
         setIsArchiving(true);
         setError(null);
         setIsEncrypted(false);
-        setArchiveLog('Analyzing archive...');
+        setArchiveLog('Analyzing file...');
 
         try {
-            const reader = new zip.ZipReader(new zip.BlobReader(file));
-            const entries = await reader.getEntries();
-            
-            // 少なくとも1つのファイルが暗号化されているかチェック
-            const hasEncryption = entries.some(entry => entry.encrypted);
-            
-            if (hasEncryption) {
+            const buffer = await file.arrayBuffer();
+            const bytes = new Uint8Array(buffer);
+
+            await new Promise<void>((resolve, reject) => {
+                fflate.unzip(bytes, (err, _) => {
+                    if (err) {
+                        if (err.message.toLowerCase().includes("encrypted") || err.message.toLowerCase().includes("password")) {
+                            setIsEncrypted(true);
+                            addLog("Encrypted archive detected.");
+                            resolve();
+                        } else {
+                            reject(err);
+                        }
+                    } else {
+                        setIsEncrypted(false);
+                        addLog("Archive is not encrypted.");
+                        resolve();
+                    }
+                });
+            });
+        } catch (e: any) {
+            const msg = e.message ? e.message.toLowerCase() : "";
+            if (msg.includes("encrypted") || msg.includes("password")) {
                 setIsEncrypted(true);
                 addLog("Encrypted archive detected.");
             } else {
-                addLog("Archive is not encrypted.");
+                setError("Analysis failed: " + e.message);
             }
-            await reader.close();
-        } catch (e: any) {
-            setError("Analysis failed: " + e.message);
         } finally {
             setIsArchiving(false);
         }
     };
 
-    // Zip圧縮 (zip.js版 - 確実な暗号化)
     const createZip = async (files: File[], config: ArchiveConfig) => {
         setIsArchiving(true);
+        addLog('Preparing files...');
         setError(null);
-        addLog('Initializing Writer...');
 
         try {
-            // 出力先のBlobWriterを作成
-            const blobWriter = new zip.BlobWriter("application/zip");
-            
-            // ZipWriterを作成
-            const writer = new zip.ZipWriter(blobWriter);
-
-            const hasPassword = config.password && config.password.trim().length > 0;
-            if (hasPassword) {
-                addLog(`Encrypting with password (AES-256)...`);
-            }
-
+            const fileData: Record<string, Uint8Array> = {};
             for (const file of files) {
-                addLog(`Adding: ${file.name}`);
-                
-                // オプション設定
-                const options: any = {
-                    level: config.level ?? 5,
-                    bufferedWrite: true, // メモリ節約
-                };
-
-                // パスワードがある場合のみ設定
-                if (hasPassword) {
-                    options.password = config.password;
-                    options.encryptionStrength = 3; // 3 = AES-256 (Strong)
-                }
-
-                // ファイルを追加
-                await writer.add(file.name, new zip.BlobReader(file), options);
+                const buffer = await file.arrayBuffer();
+                fileData[file.name] = new Uint8Array(buffer);
             }
 
-            addLog('Finalizing Zip...');
-            await writer.close();
+            addLog('Compressing...');
+            
+            const options: any = {
+                level: config.level,
+                mem: 12,
+            };
+            
+            if (config.password && config.password.trim() !== '') {
+                options.password = config.password;
+            }
 
-            // Blobを取得
-            const blob = await blobWriter.getData();
-            
-            // ダウンロード
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            
-            const now = new Date();
-            const timestamp = `${now.getHours()}${now.getMinutes()}${now.getSeconds()}`;
-            const fileName = hasPassword ? `secure_archive_${timestamp}.zip` : `archive_${timestamp}.zip`;
-            
-            link.download = fileName;
-            link.click();
-
-            addLog('Done!');
+            fflate.zip(fileData, options, (err, data) => {
+                if (err) {
+                    setError(err.message);
+                    setIsArchiving(false);
+                    return;
+                }
+                const blob = new Blob([data as any], { type: 'application/zip' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `archive_${Date.now()}.zip`;
+                link.click();
+                addLog(`Created zip with ${files.length} files!`);
+                setIsArchiving(false);
+            });
 
         } catch (err: any) {
-            console.error(err);
-            setError("Compression failed: " + err.message);
-        } finally {
+            setError(err.message);
             setIsArchiving(false);
         }
     };
 
-    // Zip解凍 (zip.js版)
     const unzip = async (file: File, config: ArchiveConfig) => {
         setIsArchiving(true);
-        addLog('Reading entries...');
+        addLog('Decrypting...');
         setExtractedFiles([]);
         setError(null);
 
         try {
-            // パスワードリスト作成
+            const buffer = await file.arrayBuffer();
+            const bytes = new Uint8Array(buffer);
+            
             let passwords: (string | undefined)[] = [config.password || undefined];
             if (config.passwordListFile) {
                 const text = await config.passwordListFile.text();
                 const list = text.split(/\r\n|\n/).map(p => p.trim()).filter(p => p);
                 passwords = [...passwords, ...list];
             }
-            // undefined (パスワードなし) も試行候補に入れる
-            if (!passwords.includes(undefined) && !config.password) passwords.push(undefined);
+            if (passwords.length === 0 && !config.password) passwords.push(undefined);
 
             let success = false;
 
-            // 総当たりループ
             for (const pwd of passwords) {
                 if (success) break;
-                
                 try {
-                    const reader = new zip.ZipReader(new zip.BlobReader(file));
-                    const entries = await reader.getEntries();
-                    const tempFiles: ArchiveFile[] = [];
+                    await new Promise<void>((resolve, reject) => {
+                        const opts: any = {};
+                        if (pwd) opts.password = pwd;
 
-                    for (const entry of entries) {
-                        if (entry.directory) continue;
-
-                        // パスワード設定 (entryごとに必要)
-                        const options: any = {};
-                        if (pwd) options.password = pwd;
-
-                        // 展開試行 (パスワードが違うとここでエラーになる)
-                        const dataWriter = new zip.Uint8ArrayWriter();
-                        const data = await entry.getData!(dataWriter, options);
-                        
-                        tempFiles.push({
-                            name: entry.filename,
-                            size: entry.uncompressedSize,
-                            data: data
+                        fflate.unzip(bytes, opts, (err, unzipped) => {
+                            if (err) { reject(err); return; }
+                            
+                            const files: ArchiveFile[] = [];
+                            for (const [filename, fileData] of Object.entries(unzipped)) {
+                                if (filename.endsWith('/')) continue;
+                                files.push({ name: filename, size: fileData.length, data: fileData });
+                            }
+                            setExtractedFiles(files);
+                            addLog(`Unzip success!`);
+                            success = true;
+                            resolve();
                         });
-                    }
-
-                    await reader.close();
-                    
-                    // エラーなくここまで来たら成功
-                    setExtractedFiles(tempFiles);
-                    addLog('Extraction successful!');
-                    success = true;
-
-                } catch (e: any) {
-                    // パスワード違いのエラーなら次へ
-                    // zip.jsは "Encrypted" や "Password" を含むエラーを投げる
-                    continue;
-                }
+                    });
+                } catch (e) { continue; }
             }
 
             if (!success) {
-                setError("Failed to extract. Password incorrect.");
+                throw new Error("Failed to unzip. Password incorrect.");
             }
 
         } catch (err: any) {
-            setError("Error: " + err.message);
+            setError(err.message);
         } finally {
             setIsArchiving(false);
         }
     };
 
-    // フォルダへ保存 (変更なし)
     const saveToFolder = async () => {
-        if (extractedFiles.length === 0) return;
+        // @ts-ignore
+        if (!window.showDirectoryPicker) { alert("Use Chrome/Edge"); return; }
         try {
             // @ts-ignore
             const dirHandle = await window.showDirectoryPicker();
-            addLog("Saving...");
+            addLog("Saving files...");
+
             for (const file of extractedFiles) {
-                // @ts-ignore
-                const fileHandle = await dirHandle.getFileHandle(file.name.split('/').pop(), { create: true });
-                // @ts-ignore
-                const writable = await fileHandle.createWritable();
-                await writable.write(file.data);
-                await writable.close();
+                const parts = file.name.split('/');
+                const fileName = parts.pop();
+                let currentHandle = dirHandle;
+
+                for (const part of parts) {
+                    if (part === '.' || part === '') continue;
+                    // @ts-ignore
+                    currentHandle = await currentHandle.getDirectoryHandle(part, { create: true });
+                }
+
+                if (fileName) {
+                    // @ts-ignore
+                    const fileHandle = await currentHandle.getFileHandle(fileName, { create: true });
+                    // @ts-ignore
+                    const writable = await fileHandle.createWritable();
+                    await writable.write(file.data);
+                    await writable.close();
+                }
             }
-            addLog("Saved!");
-            alert("保存完了しました");
+            addLog("Saved to folder!");
+            alert("Saved successfully!");
         } catch (err: any) {
             if (err.name !== 'AbortError') setError("Save failed: " + err.message);
         }
     };
+    
+    const downloadAllExtracted = () => { /* Zip download logic if needed */ };
 
-    return { isArchiving, archiveLog, extractedFiles, error, isEncrypted, checkEncryption, createZip, unzip, saveToFolder };
+    return { isArchiving, archiveLog, extractedFiles, error, isEncrypted, checkEncryption, createZip, unzip, saveToFolder, downloadAllExtracted };
 };
