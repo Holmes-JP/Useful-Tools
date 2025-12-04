@@ -1,59 +1,133 @@
 import { useState } from 'react';
-import { PDFDocument, degrees } from 'pdf-lib';
-import * as pdfjsLib from 'pdfjs-dist';
-// インポートパスを修正
-import type { DocConfig } from '@/components/Tools/Settings/DocumentSettings';
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
+import { PDFDocument, StandardFonts } from 'pdf-lib';
 
 export const usePdfConverter = () => {
-<<<<<<< HEAD
-    const [isPdfLoading, setIsPdfLoading] = useState(false);
-    const [pdfLog, setPdfLog] = useState<string>('');
-    const [pdfError, setPdfError] = useState<string | null>(null);
-    const [pdfOutputUrl, setPdfOutputUrl] = useState<string | null>(null);
+    const [isPdfLoading, setIsLoading] = useState(false);
+    const [pdfLog, setLog] = useState<string>("");
+    const [pdfError, setError] = useState<string | null>(null);
+    const [pdfOutputUrl, setOutputUrl] = useState<string | null>(null);
 
-    const addLog = (msg: string) => setPdfLog(prev => prev ? `${prev}\n${msg}` : msg);
-
-    const mergePdfs = async (files: File[]): Promise<string | null> => {
-        setIsPdfLoading(true);
-        setPdfError(null);
-        setPdfOutputUrl(null);
-        setPdfLog('');
+    const mergePdfs = async (files: File[]) => {
+        setIsLoading(true);
+        setLog("Merging PDFs...");
+        setError(null);
+        
         try {
-            addLog(`Merging ${files.length} file(s)...`);
             const mergedPdf = await PDFDocument.create();
 
-            for (const file of files) {
-                addLog(`Loading ${file.name}...`);
-                const ab = await file.arrayBuffer();
-                const uint8 = new Uint8Array(ab);
+            // helper: convert plain text file to PDF bytes
+                const textFileToPdfBytes = async (file: File) => {
+                const text = await file.text();
+                const doc = await PDFDocument.create();
+                const font = await doc.embedFont(StandardFonts.Helvetica);
+                let page = doc.addPage();
+                const { width, height } = page.getSize();
+                const margin = 36;
+                const fontSize = 12;
+                const lineHeight = fontSize + 4;
+                let x = margin;
+                let y = height - margin;
 
-                let srcPdf: PDFDocument | null = null;
-                try {
-                    srcPdf = await PDFDocument.load(uint8);
-                } catch (err) {
-                    try {
-                        srcPdf = await PDFDocument.load(uint8, { ignoreEncryption: true as any });
-                    } catch (err2: any) {
-                        throw new Error(`Failed to load PDF '${file.name}': ${err2?.message || String(err2)}`);
+                const lines = text.split(/\r?\n/);
+                    for (const rawLine of lines) {
+                    // simple wrap by splitting long lines
+                    const words = rawLine.split(' ');
+                    let line = '';
+                    for (const word of words) {
+                        const testLine = line ? line + ' ' + word : word;
+                        const textWidth = font.widthOfTextAtSize(testLine, fontSize);
+                            if (textWidth + margin * 2 > width) {
+                            // draw current line
+                            page.drawText(line, { x, y, size: fontSize, font });
+                            y -= lineHeight;
+                            line = word;
+                            if (y < margin) {
+                                // add new page
+                                    const newPage = doc.addPage();
+                                    y = newPage.getSize().height - margin;
+                                    page = newPage; // reassign page for subsequent draws
+                            }
+                        } else {
+                            line = testLine;
+                        }
+                    }
+                    if (line) {
+                        page.drawText(line, { x, y, size: fontSize, font });
+                        y -= lineHeight;
+                    }
+                    if (y < margin) {
+                        const newPage = doc.addPage();
+                        y = newPage.getSize().height - margin;
+                        page = newPage;
                     }
                 }
 
-                const pageCount = srcPdf.getPageCount();
-                addLog(`${file.name}: ${pageCount} page(s)`);
+                const pdfBytes = await doc.save();
+                return pdfBytes;
+            };
 
-                for (let idx = 0; idx < pageCount; idx++) {
+            for (const file of files) {
+                setLog(`Processing ${file.name} ...`);
+                // normalize to Uint8Array for pdf-lib
+                let uint8: Uint8Array;
+                const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+                if (isPdf) {
+                    const ab = await file.arrayBuffer();
+                    uint8 = new Uint8Array(ab);
+                } else if (file.type === 'text/plain' || file.name.toLowerCase().endsWith('.txt')) {
+                    const pdfBytes = await textFileToPdfBytes(file);
+                    uint8 = pdfBytes instanceof Uint8Array ? pdfBytes : new Uint8Array(pdfBytes as any);
+                } else {
+                    // For non-pdf files that reached here, attempt to read as arrayBuffer and try to load as PDF
+                    const ab = await file.arrayBuffer();
+                    uint8 = new Uint8Array(ab);
+                }
+
+                let srcPdf: any = null;
+                try {
                     try {
-                        const copied = await mergedPdf.copyPages(srcPdf, [idx]);
-                        if (copied && copied.length > 0) mergedPdf.addPage(copied[0]);
-                    } catch (singleErr: any) {
-                        throw new Error(`Failed to copy page ${idx} from '${file.name}': ${singleErr?.message || String(singleErr)}`);
+                        srcPdf = await PDFDocument.load(uint8);
+                    } catch (loadErr) {
+                        // retry with ignoreEncryption
+                        srcPdf = await PDFDocument.load(uint8, { ignoreEncryption: true as any });
                     }
+                } catch (loadFinalErr: any) {
+                    throw new Error(`Failed to load PDF '${file.name}': ${loadFinalErr?.message || String(loadFinalErr)}`);
+                }
+
+                if (!srcPdf) {
+                    throw new Error(`Failed to load PDF '${file.name}': unknown error`);
+                }
+
+                // copy pages safely
+                try {
+                    const indices = srcPdf.getPageIndices?.();
+                    setLog(`Loaded ${file.name} (${indices?.length ?? 0} pages)`);
+
+                    if (!indices || indices.length === 0) {
+                        // skip files with no pages
+                        continue;
+                    }
+
+                    // copy pages one-by-one to isolate failing index if any
+                    for (const idx of indices) {
+                        try {
+                            const copied = await mergedPdf.copyPages(srcPdf, [idx]);
+                            if (!copied || copied.length === 0 || !copied[0]) {
+                                throw new Error(`copyPages returned invalid result for index ${idx}`);
+                            }
+                            mergedPdf.addPage(copied[0]);
+                        } catch (singleErr: any) {
+                            // rethrow with contextual information
+                            throw new Error(`Failed to copy page ${idx} from '${file.name}': ${singleErr?.message || String(singleErr)}`);
+                        }
+                    }
+                } catch (copyErr: any) {
+                    throw copyErr;
                 }
             }
-
-            // clear simple metadata if present
+            
+            // Ensure merged PDF metadata is cleared
             try {
                 mergedPdf.setTitle('');
                 mergedPdf.setAuthor('');
@@ -61,164 +135,77 @@ export const usePdfConverter = () => {
                 mergedPdf.setKeywords([]);
             } catch (e) { /* ignore if not supported */ }
 
-            const bytes = await mergedPdf.save();
-            const blob = new Blob([bytes as any], { type: 'application/pdf' });
+            const pdfBytes = await mergedPdf.save();
+            
+            // Fix: 'pdfBytes as any' to bypass Uint8Array/BlobPart type mismatch
+            const blob = new Blob([pdfBytes as any], { type: 'application/pdf' });
             const url = URL.createObjectURL(blob);
-            setPdfOutputUrl(url);
-            addLog('Merge complete');
+            
+            setOutputUrl(url);
+            setLog("Merged successfully!");
             return url;
         } catch (e: any) {
             console.error(e);
-            setPdfError(e?.message || String(e));
-            addLog(`Error: ${e?.message || String(e)}`);
+            setError(e.message);
             return null;
         } finally {
-            setIsPdfLoading(false);
+            setIsLoading(false);
         }
     };
 
-    const pdfToText = async (file: File): Promise<string | null> => {
-        setIsPdfLoading(true);
-        setPdfError(null);
+    // Convert a single PDF File to plain text using pdfjs-dist at runtime
+    const pdfToText = async (file: File) => {
+        setIsLoading(true);
+        setError(null);
+        setLog(`Converting ${file.name} to text...`);
         try {
-            addLog(`Converting ${file.name} to text...`);
             const ab = await file.arrayBuffer();
-            // dynamic import to avoid bundling pdfjs unless used
-            // @ts-ignore
+            // dynamic import to avoid bundling pdfjs unnecessarily unless used
+            // @ts-ignore - runtime import of pdfjs-dist (may not be present until npm install)
             const pdfjs: any = await import('pdfjs-dist/legacy/build/pdf');
-
+            
+            // Provide the bundled worker URL so pdf.js can start its worker without relying on CDN paths
             try {
-                // @ts-ignore
                 const workerSrcModule: any = await import('pdfjs-dist/legacy/build/pdf.worker.min.mjs?url');
                 const workerSrc: string = workerSrcModule?.default || workerSrcModule;
-                if (pdfjs.GlobalWorkerOptions && workerSrc) pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
+                // @ts-ignore - runtime assign for pdfjs
+                if (pdfjs.GlobalWorkerOptions && workerSrc) {
+                    pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
+                }
             } catch (e) {
-                // ignore worker assignment failure
+                // ignore
             }
 
-            const loadingTask = pdfjs.getDocument({ data: ab, useWorkerFetch: false, isEvalSupported: false, useSystemFonts: true });
+            // Load document with the configured worker source
+            const loadingTask = pdfjs.getDocument({ 
+                data: ab, 
+                useWorkerFetch: false,
+                isEvalSupported: false,
+                useSystemFonts: true
+            });
             const pdfDoc = await loadingTask.promise;
             const pageCount = pdfDoc.numPages || 0;
             let fullText = '';
             for (let i = 1; i <= pageCount; i++) {
                 const page = await pdfDoc.getPage(i);
                 const content = await page.getTextContent();
-                const strings = (content.items || []).map((it: any) => it.str || '').join(' ');
-                fullText += `--- Page ${i} ---\n${strings}\n\n`;
+                const strings = content.items.map((it: any) => (it.str || '')).join('');
+                fullText += strings + '\n\n';
             }
 
             const blob = new Blob([fullText], { type: 'text/plain;charset=utf-8' });
             const url = URL.createObjectURL(blob);
-            setPdfOutputUrl(url);
-            addLog('Converted to text');
+            setOutputUrl(url);
+            setLog('Converted to text');
             return url;
         } catch (e: any) {
             console.error(e);
-            setPdfError(e?.message || String(e));
-            addLog(`Error: ${e?.message || String(e)}`);
+            setError(e?.message || String(e));
             return null;
         } finally {
-            setIsPdfLoading(false);
+            setIsLoading(false);
         }
     };
 
     return { isPdfLoading, pdfLog, pdfError, pdfOutputUrl, mergePdfs, pdfToText };
-=======
-    const [isLoading, setIsLoading] = useState(false);
-    const [log, setLog] = useState<string[]>([]);
-    const [outputUrls, setOutputUrls] = useState<{name: string, url: string}[]>([]);
-
-    const addLog = (msg: string) => setLog(prev => [...prev.slice(-19), msg]);
-
-    const processDocs = async (files: File[], config: DocConfig) => {
-        setIsLoading(true); setLog([]); setOutputUrls([]);
-        try {
-            if (config.mode === 'merge' && config.format === 'pdf') {
-                addLog("Merging PDF files...");
-                const mergedPdf = await PDFDocument.create();
-                for (const file of files) {
-                    if (file.type === 'application/pdf') {
-                        const buffer = await file.arrayBuffer();
-                        const pdf = await PDFDocument.load(buffer, { ignoreEncryption: true });
-                        const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
-                        copiedPages.forEach(p => mergedPdf.addPage(p));
-                    }
-                }
-                const bytes = await mergedPdf.save();
-                setOutputUrls([{ name: 'merged.pdf', url: URL.createObjectURL(new Blob([bytes as any], { type: 'application/pdf' })) }]);
-                addLog("Merge complete.");
-                return;
-            }
-            
-            const results = [];
-            for (const file of files) {
-                addLog(`Processing: ${file.name}`);
-                const buffer = await file.arrayBuffer();
-                if (file.type === 'application/pdf') {
-                    if (config.format === 'jpg' || config.format === 'png') {
-                        const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buffer) }).promise;
-                        for (let i = 1; i <= pdf.numPages; i++) {
-                            const page = await pdf.getPage(i);
-                            const viewport = page.getViewport({ scale: 2.0 });
-                            const canvas = document.createElement('canvas');
-                            const context = canvas.getContext('2d');
-                            canvas.height = viewport.height; canvas.width = viewport.width;
-                            if (context) {
-                                await page.render({ canvasContext: context, viewport } as any).promise;
-                                const blob = await new Promise<Blob | null>(r => canvas.toBlob(r, `image/${config.imageFormat}`));
-                                if (blob) results.push({ name: `${file.name}_p${i}.${config.imageFormat}`, url: URL.createObjectURL(blob) });
-                            }
-                        }
-                    } else if (config.format === 'txt') {
-                        const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buffer) }).promise;
-                        let fullText = "";
-                        for (let i = 1; i <= pdf.numPages; i++) {
-                            const page = await pdf.getPage(i);
-                            const content = await page.getTextContent();
-                            // @ts-ignore
-                            const str = content.items.map(item => item.str).join(' ');
-                            fullText += str + "\n\n";
-                        }
-                        results.push({ name: `${file.name}.txt`, url: URL.createObjectURL(new Blob([fullText], { type: 'text/plain' })) });
-                    } else {
-                        const pdfDoc = await PDFDocument.load(buffer, { ignoreEncryption: true });
-                        if (config.mode === 'rotate') pdfDoc.getPages().forEach(p => p.setRotation(degrees(p.getRotation().angle + config.rotateAngle)));
-                        else if (config.mode === 'remove_pages') {
-                            const ranges = config.removePageRanges.split(/[,\s]+/);
-                            const toRemove = new Set<number>();
-                            // 型指定を追加
-                            ranges.forEach((r: string) => {
-                                if(r.includes('-')) {
-                                    const [s, e] = r.split('-').map((n: string) => parseInt(n)-1);
-                                    for(let k=s; k<=e; k++) toRemove.add(k);
-                                } else {
-                                    const n = parseInt(r) - 1;
-                                    if(!isNaN(n)) toRemove.add(n);
-                                }
-                            });
-                            const sorted = Array.from(toRemove).sort((a, b) => b - a);
-                            sorted.forEach(idx => { if(idx >= 0 && idx < pdfDoc.getPageCount()) pdfDoc.removePage(idx); });
-                        }
-                        else if (config.mode === 'split') {
-                            const count = pdfDoc.getPageCount();
-                            for (let i = 0; i < count; i++) {
-                                const newDoc = await PDFDocument.create();
-                                const [p] = await newDoc.copyPages(pdfDoc, [i]);
-                                newDoc.addPage(p);
-                                const b = await newDoc.save();
-                                results.push({ name: `${file.name}_p${i+1}.pdf`, url: URL.createObjectURL(new Blob([b as any], { type: 'application/pdf' })) });
-                            }
-                            continue;
-                        }
-                        const bytes = await pdfDoc.save();
-                        results.push({ name: `edited_${file.name}`, url: URL.createObjectURL(new Blob([bytes as any], { type: 'application/pdf' })) });
-                    }
-                }
-            }
-            setOutputUrls(results);
-            addLog("Completed.");
-        } catch (e: any) { addLog("Error: " + e.message); } finally { setIsLoading(false); }
-    };
-    return { isLoading, log, outputUrls, processDocs };
->>>>>>> 8a92cacec6b709993ac994f025af737c1c0a3fcf
 };

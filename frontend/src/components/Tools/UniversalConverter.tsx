@@ -16,10 +16,10 @@ import { usePdfConverter } from '@/hooks/usePdfConverter';
 import { useAudioConverter } from '@/hooks/useAudioConverter';
 
 export default function UniversalConverter() {
-    const { isLoading: isVideoLoading, log: videoLog, error: videoError, convertVideo } = useVideoConverter();
-    const { isImageLoading, imageLog, imageError, compressImages } = useImageConverter();
+    const { isLoading: isVideoLoading, log: videoLog, outputUrls: videoOutputUrls, convertVideos, load: loadFFmpeg } = useVideoConverter();
+    const { isImageLoading, processList: imageProcessList, compressImages } = useImageConverter();
     const { isPdfLoading, pdfLog, pdfError, pdfOutputUrl, mergePdfs, pdfToText } = usePdfConverter();
-    const { isAudioLoading, audioLog, audioError } = useAudioConverter();
+    const { isLoading: isAudioLoading, log: audioLog, outputUrls: audioOutputUrls, convertAudios } = useAudioConverter();
 
     const [files, setFiles] = useState<File[]>([]);
     
@@ -38,6 +38,17 @@ export default function UniversalConverter() {
     const logRef = useRef<HTMLDivElement | null>(null);
     // ファイルごとの開始時刻を保持（index をキーにする）
     const startTimesRef = useRef<Map<number, number>>(new Map());
+
+    // Wrapper functions to adapt multi-file hooks to single-file usage
+    const convertVideo = async (file: File, config: VideoConfig): Promise<string | null> => {
+        await convertVideos([file], config);
+        return videoOutputUrls.length > 0 ? videoOutputUrls[0].url : null;
+    };
+
+    const convertAudio = async (file: File, config: AudioConfig): Promise<string | null> => {
+        await convertAudios([file], config);
+        return audioOutputUrls.length > 0 ? audioOutputUrls[0].url : null;
+    };
     
     const [videoConfig, setVideoConfig] = useState<VideoConfig>({
         format: 'mp4',
@@ -461,15 +472,23 @@ export default function UniversalConverter() {
 
     // 各ファイル処理状態 / フックログを先に計算しておく（useEffect の依存に使用するため）
     const isProcessing = isVideoLoading || isImageLoading || isPdfLoading || isAudioLoading;
+    
+    // Convert imageProcessList to log string
+    const imageLog = imageProcessList.map(p => `${p.name}: ${p.status} (${p.progress}%)`).join('\n');
+    
+    // Convert array logs to string for display
+    const videoLogString = Array.isArray(videoLog) ? videoLog.join('\n') : videoLog;
+    const audioLogString = Array.isArray(audioLog) ? audioLog.join('\n') : audioLog;
+    
     // 各ファイルタイプのログを結合
     const logText = [
-        fileTypeStats.hasVideo ? videoLog : '',
+        fileTypeStats.hasVideo ? videoLogString : '',
         fileTypeStats.hasImage ? imageLog : '',
-        fileTypeStats.hasAudio ? audioLog : '',
+        fileTypeStats.hasAudio ? audioLogString : '',
         fileTypeStats.hasDocument ? pdfLog : ''
     ].filter(Boolean).join('\n');
 
-    const errorText = videoError || imageError || pdfError || audioError;
+    const errorText = pdfError;
 
     // ログが増えたら自動でスクロールする
     useEffect(() => {

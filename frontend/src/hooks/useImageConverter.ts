@@ -31,17 +31,6 @@ export const useImageConverter = () => {
                     return newList;
                 });
 
-<<<<<<< HEAD
-            const compressedFile = await imageCompression(file, options);
-            const url = URL.createObjectURL(compressedFile);
-            
-            setOutputUrl(url);
-            setLog(`Done! ${(compressedFile.size / 1024).toFixed(1)} KB`);
-            return url;
-        } catch (error: any) {
-            setError(error.message);
-            return null;
-=======
                 // browser-image-compression の onProgress を使用
                 const options = {
                     maxSizeMB: 1,
@@ -91,7 +80,6 @@ export const useImageConverter = () => {
                 }
                 return prev;
             });
->>>>>>> 8a92cacec6b709993ac994f025af737c1c0a3fcf
         } finally {
             setIsImageLoading(false);
         }

@@ -4,24 +4,6 @@ import { fetchFile, toBlobURL } from '@ffmpeg/util';
 import type { AudioConfig } from '@/components/Tools/Settings/AudioSettings';
 
 export const useAudioConverter = () => {
-<<<<<<< HEAD
-    const [isAudioLoading, setIsLoading] = useState(false);
-    const [audioLog, setLog] = useState<string>("");
-    const [audioError, _setError] = useState<string | null>(null);
-    const [audioOutputUrl, _setOutputUrl] = useState<string | null>(null);
-    
-    const convertAudio = async (_file: File, _config: AudioConfig) => {
-        setIsLoading(true);
-        setLog("Mock converting audio...");
-        // Mock implementation to pass build
-        return new Promise<string | null>((resolve) => {
-            setTimeout(() => {
-                setIsLoading(false);
-                setLog("Done (Mock)!");
-                resolve(null);
-            }, 1000);
-        });
-=======
     const [isLoading, setIsLoading] = useState(false);
     const [log, setLog] = useState<string[]>([]);
     const [outputUrls, setOutputUrls] = useState<{name: string, url: string}[]>([]);
@@ -81,7 +63,6 @@ export const useAudioConverter = () => {
         } finally {
             setIsLoading(false);
         }
->>>>>>> 8a92cacec6b709993ac994f025af737c1c0a3fcf
     };
 
     return { isLoading, log, outputUrls, convertAudios };
