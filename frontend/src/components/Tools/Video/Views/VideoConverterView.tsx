@@ -1,16 +1,7 @@
-<<<<<<< HEAD
 import { useState } from 'react';
 import { useVideoStudio, VideoOptions } from '@/hooks/useVideoStudio';
 import { useDropzone } from 'react-dropzone';
 import { Video, Download } from 'lucide-react';
-=======
-import React, { useState } from 'react';
-import { useVideoStudio } from '@/hooks/useVideoStudio';
-import VideoSettings, { VideoConfig } from '@/components/Tools/Settings/VideoSettings';
-import { useDropzone } from 'react-dropzone';
-import { Video, Download, RefreshCw } from 'lucide-react';
-import clsx from 'clsx';
->>>>>>> 8a92cacec6b709993ac994f025af737c1c0a3fcf
 
 export default function VideoConverterView() {
     const { loaded, isLoading, log, convertUrl, convertVideo } = useVideoStudio();
