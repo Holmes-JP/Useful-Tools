@@ -35,11 +35,11 @@ export default function DocumentSettings({ config, onChange, inputType }: Props)
 
     return (
         <div className="space-y-3 bg-gray-900 p-4 rounded-lg border border-gray-700">
-            <h3 className="text-lg font-bold text-white">Document File Settings</h3>
+            <h3 className="text-lg font-bold text-white">ドキュメントファイル設定</h3>
 
             <div className="space-y-4">
                 <div className="p-4 bg-gray-800 rounded-lg border border-gray-700">
-                    <label className="block text-xs text-gray-400 mb-2">Output Format</label>
+                    <label className="block text-xs text-gray-400 mb-2">出力フォーマット</label>
                     <select
                         value={config.outputFormat || 'pdf'}
                         onChange={(e) => {
@@ -49,7 +49,7 @@ export default function DocumentSettings({ config, onChange, inputType }: Props)
                         }}
                         className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm text-white"
                     >
-                        <option value="txt">Plain Text (.txt)</option>
+                        <option value="txt">プレーンテキスト (.txt)</option>
                         <option value="pdf">PDF (.pdf)</option>
                         <option value="docx">DOCX (.docx)</option>
                         <option value="html">HTML (.html)</option>
@@ -91,7 +91,7 @@ export default function DocumentSettings({ config, onChange, inputType }: Props)
 
                             {isPdfOutput && config.mode === 'rotate' && (
                                 <div className="mt-3">
-                                    <label className="block text-xs text-gray-400 mb-1">Rotation Angle</label>
+                                    <label className="block text-xs text-gray-400 mb-1">回転角度</label>
                                     <select
                                         value={config.rotateAngle}
                                         onChange={(e) => onChange({ ...config, rotateAngle: Number(e.target.value) })}

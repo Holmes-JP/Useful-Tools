@@ -45,17 +45,17 @@ export default function AudioSettings({ config, onChange }: Props) {
 
     return (
         <div className="space-y-4 bg-gray-900 p-4 rounded-lg border border-gray-700">
-            <h3 className="text-lg font-bold text-white">Audio File Settings</h3>
+            <h3 className="text-lg font-bold text-white">音声ファイル設定</h3>
             
-            {/* Output Format */}
+            {/* 出力フォーマット */}
             <div className="p-4 bg-gray-800 rounded-lg border border-gray-700">
-                <label className="block text-xs text-gray-400 mb-2">Output Format</label>
+                <label className="block text-xs text-gray-400 mb-2">出力フォーマット</label>
                 <select 
                     value={config.format}
                     onChange={(e) => onChange({ ...config, format: e.target.value as any })}
                     className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm text-white"
                 >
-                    <optgroup label="Audio">
+                    <optgroup label="音声">
                         <option value="mp3">MP3</option>
                         <option value="wav">WAV</option>
                         <option value="m4a">M4A (AAC)</option>
@@ -63,7 +63,7 @@ export default function AudioSettings({ config, onChange }: Props) {
                         <option value="ogg">OGG</option>
                         <option value="flac">FLAC</option>
                     </optgroup>
-                    <optgroup label="Video">
+                    <optgroup label="動画">
                         <option value="mp4">MP4 (H.264)</option>
                         <option value="mov">MOV (QuickTime)</option>
                         <option value="avi">AVI</option>
@@ -84,13 +84,13 @@ export default function AudioSettings({ config, onChange }: Props) {
                     className="w-full flex items-center justify-between text-sm font-semibold text-gray-300"
                     aria-expanded={openSections.audio}
                 >
-                    <span>Audio Options</span>
-                    <span className="text-xs text-primary-400">{openSections.audio ? 'Hide' : 'Show'}</span>
+                    <span>音声オプション</span>
+                    <span className="text-xs text-primary-400">{openSections.audio ? '閉じる' : '表示'}</span>
                 </button>
                 {openSections.audio && (
                     <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
-                        <label className="block text-xs text-gray-400 mb-1">Audio Codec</label>
+                        <label className="block text-xs text-gray-400 mb-1">オーディオコーデック</label>
                         <select 
                             value={config.audioCodec || 'aac'}
                             onChange={(e) => onChange({ ...config, audioCodec: e.target.value as any })}
@@ -118,7 +118,7 @@ export default function AudioSettings({ config, onChange }: Props) {
                         </select>
                     </div>
                     <div>
-                        <label className="block text-xs text-gray-400 mb-1">Audio Bitrate</label>
+                        <label className="block text-xs text-gray-400 mb-1">ビットレート</label>
                         <select 
                             value={config.bitrate}
                             onChange={(e) => onChange({ ...config, bitrate: e.target.value })}
@@ -165,14 +165,24 @@ export default function AudioSettings({ config, onChange }: Props) {
                     </div>
                     <div>
                         <label className="block text-xs text-gray-400 mb-1">音量調整</label>
-                        <input 
-                            type="text"
-                            value={config.audioVolume || '1.0'}
-                            onChange={(e) => onChange({ ...config, audioVolume: e.target.value })}
-                            placeholder="1.0"
-                            className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm text-white"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">1.0 = 100%, 2.0 = 200%, 0.5 = 50%</p>
+                        <div className="flex items-center gap-3">
+                            <input 
+                                type="range"
+                                min="0"
+                                max="3"
+                                step="0.05"
+                                value={config.audioVolume || '1.0'}
+                                onChange={(e) => onChange({ ...config, audioVolume: e.target.value })}
+                                className="w-full accent-primary-500"
+                            />
+                            <span className="text-xs text-gray-300 w-12 text-right">
+                                {(() => {
+                                    const num = parseFloat(config.audioVolume || '1.0');
+                                    return Number.isFinite(num) ? `${Math.round(num * 100)}%` : '--';
+                                })()}
+                            </span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">1.0 = 100%、2.0 = 200%、0.5 = 50%</p>
                     </div>
                     <div>
                         <label className="block text-xs text-gray-400 mb-1">フェードイン (seconds)</label>
@@ -238,8 +248,8 @@ export default function AudioSettings({ config, onChange }: Props) {
                         className="w-full flex items-center justify-between text-sm font-semibold text-gray-300"
                         aria-expanded={openSections.video}
                     >
-                        <span>Video Options</span>
-                        <span className="text-xs text-primary-400">{openSections.video ? 'Hide' : 'Show'}</span>
+                        <span>動画オプション</span>
+                        <span className="text-xs text-primary-400">{openSections.video ? '閉じる' : '表示'}</span>
                     </button>
                     {openSections.video && (
                         <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">

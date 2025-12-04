@@ -2,7 +2,7 @@
 import { useState } from 'react';
 
 export type ImageConfig = {
-    format: 'original' | 'jpeg' | 'png' | 'webp' | 'gif';
+    format: 'original' | 'jpeg' | 'png' | 'webp' | 'gif' | 'avif' | 'heif' | 'tiff' | 'bmp' | 'pdf';
     quality: number;
     maxWidth: number;
     maxHeight?: number;
@@ -52,7 +52,7 @@ type Props = {
 
 export default function ImageSettings({ config, onChange }: Props) {
     // フォーマット判定
-    const isImageFormat = ['original', 'jpeg', 'png', 'webp'].includes(config.format);
+    const isImageFormat = ['original', 'jpeg', 'png', 'webp', 'avif', 'heif', 'tiff', 'bmp', 'pdf'].includes(config.format);
     const isGifFormat = config.format === 'gif';
     const [openSections, setOpenSections] = useState({ image: false, gif: false });
 
@@ -62,23 +62,29 @@ export default function ImageSettings({ config, onChange }: Props) {
 
     return (
         <div className="space-y-4 bg-gray-900 p-4 rounded-lg border border-gray-700">
-            <h3 className="text-lg font-bold text-white">Image File Settings</h3>
+            <h3 className="text-lg font-bold text-white">画像ファイル設定</h3>
             
-            {/* Output Format */}
+            {/* 出力フォーマット */}
             <div className="p-4 bg-gray-800 rounded-lg border border-gray-700">
-                <label className="block text-xs text-gray-400 mb-2">Output Format</label>
+                <label className="block text-xs text-gray-400 mb-2">出力フォーマット</label>
                 <select 
                     value={config.format}
                     onChange={(e) => onChange({ ...config, format: e.target.value as any })}
                     className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm text-white"
                 >
-                    <optgroup label="Image">
-                        <option value="original">Keep Original</option>
+                    <optgroup label="画像">
+                        <option value="original">元のまま</option>
                         <option value="jpeg">JPEG</option>
                         <option value="png">PNG</option>
                         <option value="webp">WebP</option>
+                        <option value="avif">AVIF（高圧縮）</option>
+                        <option value="heif">HEIF / HEIC</option>
+                        <option value="tiff">TIFF</option>
+                        <option value="bmp">BMP</option>
                     </optgroup>
-                    {/* Video output formats removed for Image settings */}
+                    <optgroup label="ドキュメント">
+                        <option value="pdf">PDF（画像をPDFにまとめる）</option>
+                    </optgroup>
                 </select>
             </div>
 
@@ -91,13 +97,13 @@ export default function ImageSettings({ config, onChange }: Props) {
                         className="w-full flex items-center justify-between text-sm font-semibold text-gray-300"
                         aria-expanded={openSections.image}
                     >
-                        <span>Image Options</span>
-                        <span className="text-xs text-primary-400">{openSections.image ? 'Hide' : 'Show'}</span>
+                        <span>画像オプション</span>
+                        <span className="text-xs text-primary-400">{openSections.image ? '閉じる' : '表示'}</span>
                     </button>
                     {openSections.image && (
                         <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
-                                <label className="block text-xs text-gray-400 mb-1">Quality ({Math.round(config.quality * 100)}%)</label>
+                                <label className="block text-xs text-gray-400 mb-1">品質 ({Math.round(config.quality * 100)}%)</label>
                                 <input 
                                     type="range" min="0.1" max="1.0" step="0.1"
                                     value={config.quality}
@@ -106,50 +112,50 @@ export default function ImageSettings({ config, onChange }: Props) {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs text-gray-400 mb-1">Max Width (px)</label>
+                                <label className="block text-xs text-gray-400 mb-1">最大幅（px）</label>
                                 <input 
                                     type="number"
                                     value={config.maxWidth || ''}
-                                    placeholder="Original"
+                                    placeholder="元のまま"
                                     onChange={(e) => onChange({ ...config, maxWidth: Number(e.target.value) })}
                                     className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm text-white placeholder-gray-500"
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs text-gray-400 mb-1">Max Height (px)</label>
+                                <label className="block text-xs text-gray-400 mb-1">最大高さ（px）</label>
                                 <input
                                     type="number"
                                     value={config.maxHeight || ''}
-                                    placeholder="Original"
+                                    placeholder="元のまま"
                                     onChange={(e) => onChange({ ...config, maxHeight: Number(e.target.value) })}
                                     className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm text-white placeholder-gray-500"
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs text-gray-400 mb-1">Fit Mode</label>
+                                <label className="block text-xs text-gray-400 mb-1">フィットモード</label>
                                 <select
                                     value={config.fitMode || 'contain'}
                                     onChange={(e) => onChange({ ...config, fitMode: e.target.value as any })}
                                     className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm text-white"
                                 >
-                                    <option value="contain">Contain (preserve aspect)</option>
-                                    <option value="cover">Cover (crop to fill)</option>
-                                    <option value="fill">Fill (stretch to fit)</option>
-                                    <option value="stretch">Stretch (distort to fit)</option>
-                                    <option value="inside">Inside (fit within)</option>
+                                    <option value="contain">含める（アスペクト維持）</option>
+                                    <option value="cover">カバー（切り抜き）</option>
+                                    <option value="fill">塗りつぶし（引き伸ばす）</option>
+                                    <option value="stretch">ストレッチ（歪ませる）</option>
+                                    <option value="inside">内側に収める</option>
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-xs text-gray-400 mb-1">Resize Algorithm</label>
+                                <label className="block text-xs text-gray-400 mb-1">リサイズアルゴリズム</label>
                                 <select
                                     value={config.resizeAlgorithm || 'lanczos'}
                                     onChange={(e) => onChange({ ...config, resizeAlgorithm: e.target.value as any })}
                                     className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm text-white"
                                 >
-                                    <option value="lanczos">Lanczos (best quality)</option>
+                                    <option value="lanczos">Lanczos（高品質）</option>
                                     <option value="bicubic">Bicubic</option>
                                     <option value="bilinear">Bilinear</option>
-                                    <option value="nearest">Nearest (fastest)</option>
+                                    <option value="nearest">Nearest（高速）</option>
                                 </select>
                             </div>
                             <div className="flex items-center">
@@ -160,7 +166,7 @@ export default function ImageSettings({ config, onChange }: Props) {
                                         onChange={(e) => onChange({ ...config, preserveExif: e.target.checked })}
                                         className="rounded bg-gray-700 border-gray-500 text-primary-500"
                                     />
-                                    <span className="text-sm text-gray-300">Preserve EXIF metadata</span>
+                                    <span className="text-sm text-gray-300">EXIF メタデータを保持</span>
                                 </label>
                             </div>
                             <div className="flex items-center">
@@ -171,7 +177,7 @@ export default function ImageSettings({ config, onChange }: Props) {
                                         onChange={(e) => onChange({ ...config, removeMetadata: e.target.checked })}
                                         className="rounded bg-gray-700 border-gray-500 text-primary-500"
                                     />
-                                    <span className="text-sm text-gray-300">Remove all metadata</span>
+                                    <span className="text-sm text-gray-300">すべてのメタデータを削除</span>
                                 </label>
                             </div>
                             <div className="flex items-center">
@@ -182,7 +188,7 @@ export default function ImageSettings({ config, onChange }: Props) {
                                         onChange={(e) => onChange({ ...config, grayscale: e.target.checked })}
                                         className="rounded bg-gray-700 border-gray-500 text-primary-500"
                                     />
-                                    <span className="text-sm text-gray-300">Convert to grayscale</span>
+                                    <span className="text-sm text-gray-300">グレースケールに変換</span>
                                 </label>
                             </div>
                             <div>
@@ -193,18 +199,18 @@ export default function ImageSettings({ config, onChange }: Props) {
                                     onChange={(e) => onChange({ ...config, backgroundColor: e.target.value })}
                                     className="w-16 h-8 p-0 bg-gray-900 border border-gray-600 rounded"
                                 />
-                                <p className="text-xs text-gray-500 mt-1">Used when adding background for formats without alpha.</p>
+                                <p className="text-xs text-gray-500 mt-1">透過を持たないフォーマットで背景を追加する際に使用します。</p>
                             </div>
                             <div>
-                                <label className="block text-xs text-gray-400 mb-1">Chroma Subsampling</label>
+                                <label className="block text-xs text-gray-400 mb-1">クロマサブサンプリング</label>
                                 <select
                                     value={config.chromaSubsampling || '4:2:0'}
                                     onChange={(e) => onChange({ ...config, chromaSubsampling: e.target.value as any })}
                                     className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm text-white"
                                 >
-                                    <option value="4:4:4">4:4:4 (No subsampling)</option>
+                                    <option value="4:4:4">4:4:4（サブサンプリングなし）</option>
                                     <option value="4:2:2">4:2:2</option>
-                                    <option value="4:2:0">4:2:0 (Standard)</option>
+                                    <option value="4:2:0">4:2:0（標準）</option>
                                 </select>
                             </div>
                             <div className="flex items-center md:col-span-2">
@@ -215,7 +221,7 @@ export default function ImageSettings({ config, onChange }: Props) {
                                         onChange={(e) => onChange({ ...config, progressive: e.target.checked })}
                                         className="rounded bg-gray-700 border-gray-500 text-primary-500"
                                     />
-                                    <span className="text-sm text-gray-300">Enable progressive encoding (JPEG)</span>
+                                    <span className="text-sm text-gray-300">プログレッシブエンコードを有効（JPEG向け）</span>
                                 </label>
                             </div>
                         </div>
@@ -232,13 +238,13 @@ export default function ImageSettings({ config, onChange }: Props) {
                         className="w-full flex items-center justify-between text-sm font-semibold text-gray-300"
                         aria-expanded={openSections.gif}
                     >
-                        <span>Image Options (GIF)</span>
-                        <span className="text-xs text-primary-400">{openSections.gif ? 'Hide' : 'Show'}</span>
+                        <span>GIF オプション</span>
+                        <span className="text-xs text-primary-400">{openSections.gif ? '閉じる' : '表示'}</span>
                     </button>
                     {openSections.gif && (
                         <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
-                                <label className="block text-xs text-gray-400 mb-1">Trim Start (seconds)</label>
+                                <label className="block text-xs text-gray-400 mb-1">開始トリム（秒）</label>
                                 <input
                                     type="text"
                                     value={config.trimStart || ''}
@@ -248,27 +254,27 @@ export default function ImageSettings({ config, onChange }: Props) {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs text-gray-400 mb-1">Trim End (seconds)</label>
+                                <label className="block text-xs text-gray-400 mb-1">終了トリム（秒）</label>
                                 <input
                                     type="text"
                                     value={config.trimEnd || ''}
                                     onChange={(e) => onChange({ ...config, trimEnd: e.target.value })}
-                                    placeholder="Leave empty for full length"
+                                    placeholder="空にすると全長"
                                     className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm text-white"
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs text-gray-400 mb-1">Width (pixels)</label>
+                                <label className="block text-xs text-gray-400 mb-1">幅（ピクセル）</label>
                                 <input
                                     type="text"
                                     value={config.gifWidth || ''}
                                     onChange={(e) => onChange({ ...config, gifWidth: e.target.value })}
-                                    placeholder="Original"
+                                    placeholder="元のまま"
                                     className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm text-white"
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs text-gray-400 mb-1">Loop Count (0 = infinite)</label>
+                                <label className="block text-xs text-gray-400 mb-1">ループ回数（0 = 無限）</label>
                                 <input
                                     type="text"
                                     value={config.gifLoop || '0'}
@@ -276,10 +282,10 @@ export default function ImageSettings({ config, onChange }: Props) {
                                     placeholder="0"
                                     className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm text-white"
                                 />
-                                <p className="text-xs text-gray-500 mt-1">0–10000 (0 = infinite)</p>
+                                <p className="text-xs text-gray-500 mt-1">0–10000（0 = 無限）</p>
                             </div>
                             <div>
-                                <label className="block text-xs text-gray-400 mb-1">FPS (frame rate)</label>
+                                <label className="block text-xs text-gray-400 mb-1">フレームレート（FPS）</label>
                                 <input
                                     type="text"
                                     value={config.gifFps || ''}
@@ -287,19 +293,19 @@ export default function ImageSettings({ config, onChange }: Props) {
                                     placeholder="10"
                                     className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm text-white"
                                 />
-                                <p className="text-xs text-gray-500 mt-1">Recommended: 10–15</p>
+                                <p className="text-xs text-gray-500 mt-1">推奨: 10–15</p>
                             </div>
                             <div>
-                                <label className="block text-xs text-gray-400 mb-1">Compression</label>
+                                <label className="block text-xs text-gray-400 mb-1">圧縮</label>
                                 <select
                                     value={config.gifCompression || '2'}
                                     onChange={(e) => onChange({ ...config, gifCompression: e.target.value as any })}
                                     className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm text-white"
                                 >
-                                    <option value="0">Best quality (largest)</option>
-                                    <option value="1">High quality</option>
-                                    <option value="2">Standard</option>
-                                    <option value="3">Highest compression (smallest)</option>
+                                    <option value="0">最高画質（最大サイズ）</option>
+                                    <option value="1">高画質</option>
+                                    <option value="2">標準</option>
+                                    <option value="3">高圧縮（最小サイズ）</option>
                                 </select>
                             </div>
                             <div className="flex items-center md:col-span-2">
@@ -310,7 +316,7 @@ export default function ImageSettings({ config, onChange }: Props) {
                                         onChange={(e) => onChange({ ...config, gifTransparent: e.target.checked })}
                                         className="rounded bg-gray-700 border-gray-500 text-primary-500"
                                     />
-                                    <span className="text-sm text-gray-300">Enable transparent background</span>
+                                    <span className="text-sm text-gray-300">透明背景を有効にする</span>
                                 </label>
                             </div>
                         </div>

@@ -117,16 +117,16 @@ export default function VideoSettings({ config, onChange }: Props) {
     return (
         <div className="p-4 bg-gray-900 rounded-lg border border-gray-700">
             <div className="space-y-4">
-                <h3 className="text-lg font-bold text-white">Video File Settings</h3>
+                <h3 className="text-lg font-bold text-white">動画ファイル設定</h3>
 
                 <div className="p-4 bg-gray-800 rounded-lg border border-gray-700">
-                <label className="block text-xs text-gray-400 mb-2">Output Format</label>
+                <label className="block text-xs text-gray-400 mb-2">出力フォーマット</label>
                 <select 
                     value={config.format}
                     onChange={(e) => onChange({ ...config, format: e.target.value as any })}
                     className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm text-white"
                 >
-                    <optgroup label="Video">
+                    <optgroup label="動画">
                         <option value="mp4">MP4 (H.264)</option>
                         <option value="mov">MOV (QuickTime)</option>
                         <option value="avi">AVI</option>
@@ -136,14 +136,14 @@ export default function VideoSettings({ config, onChange }: Props) {
                         <option value="wmv">WMV (Windows Media)</option>
                         <option value="m4v">M4V (iTunes)</option>
                     </optgroup>
-                    <optgroup label="Image">
-                        <option value="gif">GIF (Animated)</option>
+                    <optgroup label="画像">
+                        <option value="gif">GIF（アニメーション）</option>
                     </optgroup>
-                    <optgroup label="Audio">
-                        <option value="mp3">MP3 (Audio Only)</option>
-                        <option value="aac">AAC (Audio Only)</option>
-                        <option value="wav">WAV (Audio Only)</option>
-                        <option value="ogg">OGG (Audio Only)</option>
+                    <optgroup label="音声">
+                        <option value="mp3">MP3（音声のみ）</option>
+                        <option value="aac">AAC（音声のみ）</option>
+                        <option value="wav">WAV（音声のみ）</option>
+                        <option value="ogg">OGG（音声のみ）</option>
                     </optgroup>
                 </select>
             </div>
@@ -156,13 +156,13 @@ export default function VideoSettings({ config, onChange }: Props) {
                         className="w-full flex items-center justify-between text-sm font-semibold text-gray-300"
                         aria-expanded={openSections.video}
                     >
-                        <span>Video Options</span>
-                        <span className="text-xs text-primary-400">{openSections.video ? 'Hide' : 'Show'}</span>
+                        <span>動画オプション</span>
+                        <span className="text-xs text-primary-400">{openSections.video ? '閉じる' : '表示'}</span>
                     </button>
                     {openSections.video && (
                         <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
-                                <label className="block text-xs text-gray-400 mb-1">Video Codec</label>
+                                <label className="block text-xs text-gray-400 mb-1">ビデオコーデック</label>
                                 <select 
                                     value={config.videoCodec}
                                     onChange={(e) => onChange({ ...config, videoCodec: e.target.value as any })}
@@ -174,7 +174,7 @@ export default function VideoSettings({ config, onChange }: Props) {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-xs text-gray-400 mb-1">Resolution</label>
+                                <label className="block text-xs text-gray-400 mb-1">解像度</label>
                                 <select 
                                     value={config.resolution}
                                     onChange={(e) => onChange({ ...config, resolution: e.target.value as any })}
@@ -186,7 +186,7 @@ export default function VideoSettings({ config, onChange }: Props) {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-xs text-gray-400 mb-1">Trim Start (seconds)</label>
+                                <label className="block text-xs text-gray-400 mb-1">トリム開始（秒）</label>
                                 <input 
                                     type="text"
                                     value={config.trimStart}
@@ -196,7 +196,7 @@ export default function VideoSettings({ config, onChange }: Props) {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs text-gray-400 mb-1">Trim End (seconds)</label>
+                                <label className="block text-xs text-gray-400 mb-1">トリム終了（秒）</label>
                                 <input 
                                     type="text"
                                     value={config.trimEnd}
@@ -206,7 +206,7 @@ export default function VideoSettings({ config, onChange }: Props) {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs text-gray-400 mb-1">Frame Rate</label>
+                                <label className="block text-xs text-gray-400 mb-1">フレームレート</label>
                                 <select 
                                     value={config.frameRate}
                                     onChange={(e) => onChange({ ...config, frameRate: e.target.value as any })}
@@ -218,7 +218,7 @@ export default function VideoSettings({ config, onChange }: Props) {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-xs text-gray-400 mb-1">Video Bitrate</label>
+                                <label className="block text-xs text-gray-400 mb-1">ビデオビットレート</label>
                                 <select 
                                     value={config.videoBitrate}
                                     onChange={(e) => onChange({ ...config, videoBitrate: e.target.value as any })}
@@ -248,10 +248,10 @@ export default function VideoSettings({ config, onChange }: Props) {
                                     onChange={(e) => onChange({ ...config, rotate: e.target.value as any })}
                                     className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm text-white"
                                 >
-                                    <option value="0">0° (No Rotation)</option>
-                                    <option value="90">90° (Clockwise)</option>
-                                    <option value="180">180° (Upside Down)</option>
-                                    <option value="270">270° (Counter-Clockwise)</option>
+                                    <option value="0">0°（回転なし）</option>
+                                    <option value="90">90°（時計回り）</option>
+                                    <option value="180">180°（上下反転）</option>
+                                    <option value="270">270°（反時計回り）</option>
                                 </select>
                             </div>
                             <div>
@@ -324,13 +324,13 @@ export default function VideoSettings({ config, onChange }: Props) {
                         className="w-full flex items-center justify-between text-sm font-semibold text-gray-300"
                         aria-expanded={openSections.gif}
                     >
-                        <span>Image Options (GIF)</span>
-                        <span className="text-xs text-primary-400">{openSections.gif ? 'Hide' : 'Show'}</span>
+                        <span>GIF オプション</span>
+                        <span className="text-xs text-primary-400">{openSections.gif ? '閉じる' : '表示'}</span>
                     </button>
                     {openSections.gif && (
                         <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
-                                <label className="block text-xs text-gray-400 mb-1">トリムスタート (seconds)</label>
+                                <label className="block text-xs text-gray-400 mb-1">トリム開始（秒）</label>
                                 <input 
                                     type="text"
                                     value={config.trimStart}
@@ -340,7 +340,7 @@ export default function VideoSettings({ config, onChange }: Props) {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs text-gray-400 mb-1">トリムエンド (seconds)</label>
+                                <label className="block text-xs text-gray-400 mb-1">トリム終了（秒）</label>
                                 <input 
                                     type="text"
                                     value={config.trimEnd}
@@ -350,7 +350,7 @@ export default function VideoSettings({ config, onChange }: Props) {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs text-gray-400 mb-1">幅 (pixels)</label>
+                                <label className="block text-xs text-gray-400 mb-1">幅（ピクセル）</label>
                                 <input 
                                     type="text"
                                     value={config.gifWidth}
@@ -360,7 +360,7 @@ export default function VideoSettings({ config, onChange }: Props) {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs text-gray-400 mb-1">ループカウント (0=無限)</label>
+                                <label className="block text-xs text-gray-400 mb-1">ループ回数（0 = 無限）</label>
                                 <input 
                                     type="text"
                                     value={config.gifLoop}
@@ -371,7 +371,7 @@ export default function VideoSettings({ config, onChange }: Props) {
                                 <p className="text-xs text-gray-500 mt-1">0〜10000 (0=無限ループ)</p>
                             </div>
                             <div>
-                                <label className="block text-xs text-gray-400 mb-1">FPS (フレームレート)</label>
+                                <label className="block text-xs text-gray-400 mb-1">フレームレート（FPS）</label>
                                 <input 
                                     type="text"
                                     value={config.gifFps}
@@ -379,7 +379,7 @@ export default function VideoSettings({ config, onChange }: Props) {
                                     placeholder="10"
                                     className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm text-white"
                                 />
-                                <p className="text-xs text-gray-500 mt-1">推奨: 10-15</p>
+                                    <p className="text-xs text-gray-500 mt-1">推奨: 10–15</p>
                             </div>
                             <div>
                                 <label className="block text-xs text-gray-400 mb-1">圧縮率</label>
@@ -402,7 +402,7 @@ export default function VideoSettings({ config, onChange }: Props) {
                                         onChange={(e) => onChange({ ...config, gifTransparent: e.target.checked })}
                                         className="rounded bg-gray-700 border-gray-500 text-primary-500"
                                     />
-                                    <span className="text-sm text-gray-300">背景透過を有効化</span>
+                                    <span className="text-sm text-gray-300">透明背景を有効にする</span>
                                 </label>
                             </div>
                         </div>
@@ -418,13 +418,13 @@ export default function VideoSettings({ config, onChange }: Props) {
                         className="w-full flex items-center justify-between text-sm font-semibold text-gray-300"
                         aria-expanded={openSections.audioForVideo}
                     >
-                        <span>Audio Options</span>
-                        <span className="text-xs text-primary-400">{openSections.audioForVideo ? 'Hide' : 'Show'}</span>
+                        <span>音声オプション</span>
+                        <span className="text-xs text-primary-400">{openSections.audioForVideo ? '閉じる' : '表示'}</span>
                     </button>
                     {openSections.audioForVideo && (
                         <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
-                                <label className="block text-xs text-gray-400 mb-1">Audio Codec</label>
+                                <label className="block text-xs text-gray-400 mb-1">オーディオコーデック</label>
                                 <select 
                                     value={config.audioCodec}
                                     onChange={(e) => onChange({ ...config, audioCodec: e.target.value as any })}
@@ -453,7 +453,7 @@ export default function VideoSettings({ config, onChange }: Props) {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-xs text-gray-400 mb-1">Audio Bitrate</label>
+                                <label className="block text-xs text-gray-400 mb-1">オーディオビットレート</label>
                                 <select 
                                     value={config.audioBitrate}
                                     onChange={(e) => onChange({ ...config, audioBitrate: e.target.value as any })}
@@ -470,7 +470,7 @@ export default function VideoSettings({ config, onChange }: Props) {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-xs text-gray-400 mb-1">サンプルレート (Hz)</label>
+                                <label className="block text-xs text-gray-400 mb-1">サンプルレート（Hz）</label>
                                 <select 
                                     value={config.audioSampleRate}
                                     onChange={(e) => onChange({ ...config, audioSampleRate: e.target.value as any })}
@@ -521,7 +521,7 @@ export default function VideoSettings({ config, onChange }: Props) {
                                         })()}
                                     </span>
                                 </div>
-                                <p className="text-xs text-gray-500 mt-1">1.0 = 100%, 2.0 = 200%, 0.5 = 50%</p>
+                                    <p className="text-xs text-gray-500 mt-1">1.0 = 100%、2.0 = 200%、0.5 = 50%</p>
                             </div>
                             <div>
                                 <label className="block text-xs text-gray-400 mb-1">フェードイン (seconds)</label>
@@ -554,7 +554,7 @@ export default function VideoSettings({ config, onChange }: Props) {
                                         className="rounded bg-gray-700 border-gray-500 text-primary-500"
                                         disabled={config.mute}
                                     />
-                                    <span className="text-sm text-gray-300">音量正規化 (Normalize)</span>
+                                    <span className="text-sm text-gray-300">音量正規化</span>
                                 </label>
                             </div>
                             <div className="flex items-center">
@@ -565,7 +565,7 @@ export default function VideoSettings({ config, onChange }: Props) {
                                         onChange={(e) => onChange({ ...config, mute: e.target.checked })}
                                         className="rounded bg-gray-700 border-gray-500 text-primary-500"
                                     />
-                                    <span className="text-sm text-gray-300">Mute Audio (Remove audio track)</span>
+                                    <span className="text-sm text-gray-300">音声をミュート（音声トラックを削除）</span>
                                 </label>
                             </div>
                         </div>
@@ -581,8 +581,8 @@ export default function VideoSettings({ config, onChange }: Props) {
                         className="w-full flex items-center justify-between text-sm font-semibold text-gray-300"
                         aria-expanded={openSections.audioOnly}
                     >
-                        <span>Audio Options</span>
-                        <span className="text-xs text-primary-400">{openSections.audioOnly ? 'Hide' : 'Show'}</span>
+                        <span>音声オプション</span>
+                        <span className="text-xs text-primary-400">{openSections.audioOnly ? '閉じる' : '表示'}</span>
                     </button>
                     {openSections.audioOnly && (
                         <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
