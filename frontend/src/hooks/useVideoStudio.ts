@@ -3,6 +3,7 @@ import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile } from '@ffmpeg/util';
 import type { VideoConfig } from '@/components/Tools/Settings/VideoSettings';
 import type { AudioConfig } from '@/components/Tools/Settings/AudioSettings';
+import { getFFmpegConfig } from '@/utils/ffmpegLoader';
 
 export type ProcessStatus = {
     id: string;
@@ -30,6 +31,7 @@ export const useVideoStudio = () => {
 
     const ffmpegRef = useRef(new FFmpeg());
     const loadingRef = useRef(false);
+    const logHandlerAttachedRef = useRef(false);
 
     const addLog = (msg: string) => setLog(prev => [...prev.slice(-49), msg]);
 
@@ -41,10 +43,13 @@ export const useVideoStudio = () => {
         loadingRef.current = true;
         const ffmpeg = ffmpegRef.current;
 
-        ffmpeg.on('log', ({ message }) => {
-            console.log(message);
-            if (!message.startsWith('frame=') && !message.startsWith('size=')) addLog(message);
-        });
+        if (!logHandlerAttachedRef.current) {
+            ffmpeg.on('log', ({ message }) => {
+                console.log(message);
+                if (!message.startsWith('frame=') && !message.startsWith('size=')) addLog(message);
+            });
+            logHandlerAttachedRef.current = true;
+        }
         
         ffmpeg.on('progress', ({ progress }) => {
             const percent = Math.min(Math.round(progress * 100), 100);
@@ -60,15 +65,10 @@ export const useVideoStudio = () => {
 
         try {
             // ローカルファイルを読み込む
-            // window.location.origin を使って絶対パス化
-            const baseURL = `${window.location.origin}/ffmpeg`;
-            addLog(`Loading Engine from ${baseURL}...`);
+            addLog('Loading Engine...');
 
-            await ffmpeg.load({
-                coreURL: `${baseURL}/ffmpeg-core.js`,
-                wasmURL: `${baseURL}/ffmpeg-core.wasm`,
-                workerURL: `${baseURL}/ffmpeg-core.worker.js`,
-            });
+            const config = getFFmpegConfig();
+            await ffmpeg.load(config);
             
             setLoaded(true);
             addLog("Engine Loaded (Local MT).");
@@ -150,18 +150,85 @@ export const useVideoStudio = () => {
                 const outName = `out_${i}.${config.format}`;
                 await ffmpeg.writeFile(inName, await fetchFile(file));
 
-                 // GIF Special
+                 // GIF Special: generate a palette then apply it to produce a higher-quality GIF
                  if (config.format === 'gif') {
                      const vConf = config as VideoConfig;
-                     const args = ['-i', inName];
-                     if (vConf.trimStart) args.push('-ss', String(vConf.trimStart));
-                     if (vConf.trimEnd) args.push('-to', String(vConf.trimEnd));
+                     const paletteName = 'palette.png';
                      const fps = vConf.gifFps || '10';
                      const width = vConf.gifWidth || '480';
-                     args.push('-vf', `fps=${fps},scale=${width}:-1`);
                      const loop = parseInt(vConf.gifLoop || '0', 10);
-                     args.push('-loop', String(loop), outName);
-                     await ffmpeg.exec(args);
+
+                     // 1) generate palette from input video
+                     const genArgs = ['-i', inName, '-vf', `fps=${fps},scale=${width}:-1:flags=lanczos,palettegen=max_colors=256`, '-y', paletteName];
+                     addLog(`[ffmpeg] gen palette: ${genArgs.join(' ')}`);
+                     await ffmpeg.exec(genArgs);
+
+                    // verify palette exists
+                    try {
+                        const p = await ffmpeg.readFile(paletteName);
+                        addLog(`[ffmpeg] palette size: ${p?.length ?? (p as any)?.byteLength ?? 'unknown'}`);
+                    } catch (e) {
+                        addLog('[ffmpeg] palette not found after palettegen');
+                    }
+
+                    // 2) create GIF using the palette (paletteuse filter)
+                    // Try paletteuse pipeline; if it fails, fall back to a simpler gif encode.
+                    try {
+                        const filter = `[0:v]fps=${fps},scale=${width}:-1:flags=lanczos[vid];[vid][1:v]paletteuse=alpha_threshold=128`;
+                        const useArgs = ['-i', inName, '-i', paletteName, '-filter_complex', filter, '-loop', String(loop), '-y', outName];
+                        addLog(`[ffmpeg] create gif (paletteuse): ${useArgs.join(' ')}`);
+                        await ffmpeg.exec(useArgs);
+                    } catch (gifErr) {
+                        addLog('[ffmpeg] paletteuse failed, attempting simple gif fallback: ' + String(gifErr));
+                        // fallback: direct gif encode (lower quality)
+                        const fallbackArgs = ['-i', inName, '-vf', `fps=${fps},scale=${width}:-1:flags=lanczos`, '-f', 'gif', '-loop', String(loop), '-y', outName];
+                        addLog(`[ffmpeg] create gif (fallback): ${fallbackArgs.join(' ')}`);
+                        await ffmpeg.exec(fallbackArgs);
+                    }
+
+                     // cleanup palette
+                     try { await ffmpeg.deleteFile(paletteName); } catch { /* ignore */ }
+                 } else if (['mp3', 'wav', 'm4a', 'flac'].includes(config.format)) {
+                     // Audio extraction: use audio codec appropriate for format
+                     const audioFormat = config.format;
+                    // map first audio stream explicitly to avoid multiple-stream issues
+                    const args = ['-i', inName, '-map', '0:a:0', '-vn'];  // -vn: disable video
+
+                    if (audioFormat === 'mp3') {
+                        args.push('-c:a', 'libmp3lame', '-q:a', '2');  // -q:a 2 = good quality
+                    } else if (audioFormat === 'wav') {
+                        args.push('-c:a', 'pcm_s16le');
+                    } else if (audioFormat === 'm4a') {
+                        args.push('-c:a', 'aac', '-q:a', '2');
+                    } else if (audioFormat === 'flac') {
+                        args.push('-c:a', 'flac');
+                    }
+
+                     // Trim if needed
+                     if ('trimStart' in config && config.trimStart) {
+                         const s = parseFloat(String((config as any).trimStart));
+                         if (!Number.isNaN(s) && s > 0) args.unshift('-ss', String(s));
+                     }
+                     if ('trimEnd' in config && config.trimEnd) {
+                         const t = parseFloat(String((config as any).trimEnd));
+                         if (!Number.isNaN(t) && t > 0) args.push('-to', String(t));
+                     }
+
+                     args.push('-y', outName);
+                     try {
+                         addLog(`[ffmpeg] create audio: ${args.join(' ')}`);
+                         await ffmpeg.exec(args);
+                     } catch (audioErr) {
+                         addLog('[ffmpeg] audio encode failed, retrying with forced format: ' + String(audioErr));
+                         // retry with forced format flag for mp3
+                         if (audioFormat === 'mp3') {
+                             const retry = [...args, '-f', 'mp3'];
+                             addLog(`[ffmpeg] retry mp3: ${retry.join(' ')}`);
+                             await ffmpeg.exec(retry);
+                         } else {
+                             throw audioErr;
+                         }
+                     }
                  } else {
                     // Standard
                     const args = getArgs(inName, config);

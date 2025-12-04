@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { fetchFile, toBlobURL } from '@ffmpeg/util';
+import { fetchFile } from '@ffmpeg/util';
+import { getFFmpegConfig } from '@/utils/ffmpegLoader';
 
 export type AudioConfig = {
     format: 'mp3' | 'wav' | 'aac';
@@ -17,19 +18,24 @@ export const useAudioLab = () => {
     const [outputUrl, setOutputUrl] = useState<string | null>(null);
     
     const ffmpegRef = useRef(new FFmpeg());
+    const loadingRef = useRef(false);
+    const logHandlerAttachedRef = useRef(false);
 
     const load = useCallback(async () => {
         const ffmpeg = ffmpegRef.current;
-        if (ffmpeg.loaded) { setLoaded(true); return; }
-        const baseURL = '/ffmpeg';
-        ffmpeg.on('log', ({ message }) => { console.log(message); setLog(message); });
+        if (ffmpeg.loaded || loadingRef.current) { if (ffmpeg.loaded) setLoaded(true); return; }
+        loadingRef.current = true;
+
+        if (!logHandlerAttachedRef.current) {
+            ffmpeg.on('log', ({ message }) => { console.log(message); setLog(message); });
+            logHandlerAttachedRef.current = true;
+        }
+
         try {
-            await ffmpeg.load({
-                coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-                wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-            });
+            const config = getFFmpegConfig();
+            await ffmpeg.load(config);
             setLoaded(true);
-        } catch (err) { console.error(err); }
+        } catch (err) { console.error(err); } finally { loadingRef.current = false; }
     }, []);
 
     useEffect(() => { load(); }, [load]);

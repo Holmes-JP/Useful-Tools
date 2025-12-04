@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { fetchFile, toBlobURL } from '@ffmpeg/util';
+import { fetchFile } from '@ffmpeg/util';
 import clsx from 'clsx';
+import { getFFmpegConfig } from '@/utils/ffmpegLoader';
 
 export default function VideoConverter() {
     const [loaded, setLoaded] = useState(false);
@@ -12,29 +13,32 @@ export default function VideoConverter() {
     const [log, setLog] = useState<string>("Ready to initialize...");
     const ffmpegRef = useRef(new FFmpeg());
     const messageRef = useRef<HTMLParagraphElement | null>(null);
+    const loadingRef = useRef(false);
+    const logHandlerAttachedRef = useRef(false);
 
     const load = async () => {
         const ffmpeg = ffmpegRef.current;
         
-        // 【重要】React StrictMode対策: すでにロード済みなら何もしない
-        if (ffmpeg.loaded) {
-            setLoaded(true);
+        // React StrictMode 対策: 多重起動を防ぐ
+        if (ffmpeg.loaded || loadingRef.current) {
+            if (ffmpeg.loaded) setLoaded(true);
             return;
         }
 
+        loadingRef.current = true;
         setIsLoading(true);
-        const baseURL = '/ffmpeg';
 
-        ffmpeg.on('log', ({ message }) => {
-            setLog(message);
-            console.log(message);
-        });
+        if (!logHandlerAttachedRef.current) {
+            ffmpeg.on('log', ({ message }) => {
+                setLog(message);
+                console.log(message);
+            });
+            logHandlerAttachedRef.current = true;
+        }
 
         try {
-            await ffmpeg.load({
-                coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-                wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-            });
+            const config = getFFmpegConfig();
+            await ffmpeg.load(config);
             setLoaded(true);
             setLog("FFmpeg loaded successfully.");
         } catch (err: any) {
@@ -43,6 +47,7 @@ export default function VideoConverter() {
             setError(err.message || "Unknown error occurred during loading.");
         } finally {
             setIsLoading(false);
+            loadingRef.current = false;
         }
     };
 
