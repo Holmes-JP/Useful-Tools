@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { fetchFile, toBlobURL } from '@ffmpeg/util';
+import { fetchFile } from '@ffmpeg/util';
 import type { VideoConfig } from '@/components/Tools/Settings/VideoSettings';
 
 export const useVideoConverter = () => {
@@ -19,9 +19,9 @@ export const useVideoConverter = () => {
             const baseURL = `${window.location.origin}/ffmpeg`;
             addLog(`Loading FFmpeg from ${baseURL}...`);
             await ffmpeg.load({
-                coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-                wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-                workerURL: await toBlobURL(`${baseURL}/ffmpeg-core.worker.js`, 'text/javascript'),
+                coreURL: `${baseURL}/ffmpeg-core.js`,
+                wasmURL: `${baseURL}/ffmpeg-core.wasm`,
+                workerURL: `${baseURL}/ffmpeg-core.worker.js`,
             });
             addLog("FFmpeg loaded.");
         } catch (err: any) { 
