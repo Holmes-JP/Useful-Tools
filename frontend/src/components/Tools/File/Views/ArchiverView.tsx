@@ -79,6 +79,28 @@ export default function ArchiverView() {
                 </button>
             </div>
 
+            {/* Dropzone */}
+            <div {...getRootProps()} className={clsx("border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all bg-gray-900/40 shadow-lg", isDragActive ? "border-primary-500 bg-primary-500/10" : "border-gray-700 hover:bg-gray-800/70")}>
+                <input {...getInputProps()} />
+                <div className="flex flex-col items-center text-gray-200 space-y-2">
+                    <span className="px-4 py-1 rounded-full text-xs font-semibold uppercase tracking-wide bg-primary-500/15 text-primary-300 border border-primary-500/30">
+                        {mode === 'compress' ? 'Drop files to Zip' : 'Drop Zip to Extract'}
+                    </span>
+                    {mode === 'compress' ? <Archive size={48} className="mb-1 text-primary-300" /> : <FileArchive size={48} className="mb-1 text-primary-300" />}
+                    <p className="font-bold text-xl">
+                        {mode === 'compress'
+                            ? (compressFiles.length > 0 ? `${compressFiles.length} file(s) selected` : 'Drag & drop or click to add files')
+                            : (extractFiles.length > 0 ? `${extractFiles[0].name}` : 'Drag & drop a zip file')}
+                    </p>
+                    {mode === 'compress' && compressFiles.length > 0 && (
+                        <p className="text-sm text-primary-300 mt-1">
+                            {compressFiles.map(f => f.name).slice(0,3).join(', ')}
+                            {compressFiles.length > 3 ? `, +${compressFiles.length-3} more` : ''}
+                        </p>
+                    )}
+                </div>
+            </div>
+
             {/* Compress Settings */}
             {mode === 'compress' && (
                 <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 space-y-4">
@@ -109,25 +131,6 @@ export default function ArchiverView() {
                     </div>
                 </div>
             )}
-
-            {/* Dropzone */}
-            <div {...getRootProps()} className={clsx("border-3 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all", isDragActive ? "border-primary-500 bg-primary-500/10" : "border-gray-700 hover:bg-gray-800")}>
-                <input {...getInputProps()} />
-                <div className="flex flex-col items-center text-gray-400">
-                    {mode === 'compress' ? <Archive size={48} className="mb-2" /> : <FileArchive size={48} className="mb-2" />}
-                    <p className="font-bold text-lg">
-                        {mode === 'compress'
-                            ? (compressFiles.length > 0 ? `${compressFiles.length} file(s) selected` : 'Drop files to Zip')
-                            : (extractFiles.length > 0 ? `${extractFiles[0].name}` : 'Drop Zip to Extract')}
-                    </p>
-                    {mode === 'compress' && compressFiles.length > 0 && (
-                        <p className="text-sm text-primary-400 mt-2">
-                            {compressFiles.map(f => f.name).slice(0,3).join(', ')}
-                            {compressFiles.length > 3 ? `, +${compressFiles.length-3} more` : ''}
-                        </p>
-                    )}
-                </div>
-            </div>
 
             {/* Compress: selected files list with remove and reset */}
             {mode === 'compress' && compressFiles.length > 0 && (
