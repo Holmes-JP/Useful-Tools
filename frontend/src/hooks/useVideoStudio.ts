@@ -19,14 +19,14 @@ export const useVideoStudio = () => {
     
     // State
     const [processList, setProcessList] = useState<ProcessStatus[]>([]);
-    const [outputUrls, setOutputUrls] = useState<{name: string, url: string}[]>([]);
+    const [outputUrls] = useState<{name: string, url: string}[]>([]);
     
     // Legacy State
     const [log, setLog] = useState<string[]>([]);
     const [error, setError] = useState<string | null>(null);
-    const [convertUrl, setConvertUrl] = useState<string | null>(null);
-    const [thumbUrl, setThumbUrl] = useState<string | null>(null);
-    const [gifUrl, setGifUrl] = useState<string | null>(null);
+    const [convertUrl] = useState<string | null>(null);
+    const [thumbUrl] = useState<string | null>(null);
+    const [gifUrl] = useState<string | null>(null);
 
     const ffmpegRef = useRef(new FFmpeg());
     const loadingRef = useRef(false);
@@ -86,24 +86,26 @@ export const useVideoStudio = () => {
     // --- Args Helper ---
     const getArgs = (inName: string, config: VideoConfig | AudioConfig) => {
         const args = ['-i', inName, '-map_metadata', '-1', '-threads', '0'];
-        
-        // Video Config
-        if ('codecVideo' in config && config.format !== 'gif' && !['mp3','wav','m4a','flac'].includes(config.format)) {
-            if (config.codecVideo !== 'default') args.push('-c:v', config.codecVideo);
-            if (config.bitrateVideo) args.push('-b:v', config.bitrateVideo);
-            if ('frameRate' in config && config.frameRate > 0) args.push('-r', config.frameRate.toString());
-            if (config.codecVideo !== 'copy') args.push('-preset', 'ultrafast');
-            
-            // Resolution
-            if ('resolution' in config && config.resolution !== 'original') {
-                 const vConf = config as VideoConfig;
-                 let scale = '';
-                 if (vConf.resolution === 'custom') scale = `${vConf.customWidth}:${vConf.customHeight}`;
-                 else if (vConf.resolution === '1080p') scale = '1920:-2';
-                 else if (vConf.resolution === '720p') scale = '1280:-2';
-                 else if (vConf.resolution === '480p') scale = '854:-2';
-                 
-                 if (scale) args.push('-vf', `scale=${scale}`);
+
+        // Video Config (VideoConfig has videoCodec/videoBitrate/frameRate)
+        if ('videoCodec' in config && config.format !== 'gif' && !['mp3','wav','m4a','flac'].includes(config.format)) {
+            if (config.videoCodec && config.videoCodec !== 'copy') args.push('-c:v', config.videoCodec);
+            if (config.videoBitrate && config.videoBitrate !== 'original') args.push('-b:v', config.videoBitrate);
+            if ('frameRate' in config && config.frameRate && config.frameRate !== 'original') args.push('-r', String(config.frameRate));
+            if (config.videoCodec !== 'copy') args.push('-preset', 'ultrafast');
+
+            // Resolution mapping
+            if ('resolution' in config && config.resolution && config.resolution !== 'original') {
+                const v = config.resolution;
+                const scale = v === '2160p' ? '3840:-2'
+                    : v === '1440p' ? '2560:-2'
+                    : v === '1080p' ? '1920:-2'
+                    : v === '720p' ? '1280:-2'
+                    : v === '480p' ? '854:-2'
+                    : v === '360p' ? '640:-2'
+                    : v === '240p' ? '426:-2'
+                    : '';
+                if (scale) args.push('-vf', `scale=${scale}`);
             }
         } else if (['mp3','wav','m4a','flac'].includes(config.format)) {
             args.push('-vn');
@@ -112,13 +114,21 @@ export const useVideoStudio = () => {
         // Audio Config
         if ('mute' in config && config.mute) args.push('-an');
         else {
-             if ('codecAudio' in config && config.codecAudio !== 'default') args.push('-c:a', config.codecAudio);
-             if ('bitrateAudio' in config && config.bitrateAudio) args.push('-b:a', config.bitrateAudio);
+            if ('audioCodec' in config && config.audioCodec && config.audioCodec !== 'copy') args.push('-c:a', config.audioCodec);
+            // audio bitrate may be named either audioBitrate (VideoConfig) or bitrate (AudioConfig)
+            if ('audioBitrate' in config && config.audioBitrate) args.push('-b:a', config.audioBitrate as string);
+            else if ('bitrate' in config && (config as any).bitrate) args.push('-b:a', (config as any).bitrate);
         }
 
-        // Trim
-        if ('trimStart' in config && config.trimStart > 0) args.push('-ss', config.trimStart.toString());
-        if ('trimEnd' in config && config.trimEnd > 0) args.push('-to', config.trimEnd.toString());
+        // Trim (stored as strings in settings)
+        if ('trimStart' in config && config.trimStart) {
+            const s = parseFloat(String(config.trimStart));
+            if (!Number.isNaN(s) && s > 0) args.push('-ss', String(s));
+        }
+        if ('trimEnd' in config && config.trimEnd) {
+            const t = parseFloat(String(config.trimEnd));
+            if (!Number.isNaN(t) && t > 0) args.push('-to', String(t));
+        }
 
         return args;
     };
@@ -140,16 +150,19 @@ export const useVideoStudio = () => {
                 const outName = `out_${i}.${config.format}`;
                 await ffmpeg.writeFile(inName, await fetchFile(file));
 
-                // GIF Special
-                if (config.format === 'gif' && 'loop' in config) {
+                 // GIF Special
+                 if (config.format === 'gif') {
                      const vConf = config as VideoConfig;
                      const args = ['-i', inName];
-                     if (vConf.trimStart) args.push('-ss', vConf.trimStart.toString());
-                     if (vConf.trimEnd) args.push('-to', vConf.trimEnd.toString());
-                     args.push('-vf', `fps=${vConf.frameRate||10},scale=${vConf.customWidth||480}:-1`);
-                     args.push('-loop', vConf.loop.toString(), outName);
+                     if (vConf.trimStart) args.push('-ss', String(vConf.trimStart));
+                     if (vConf.trimEnd) args.push('-to', String(vConf.trimEnd));
+                     const fps = vConf.gifFps || '10';
+                     const width = vConf.gifWidth || '480';
+                     args.push('-vf', `fps=${fps},scale=${width}:-1`);
+                     const loop = parseInt(vConf.gifLoop || '0', 10);
+                     args.push('-loop', String(loop), outName);
                      await ffmpeg.exec(args);
-                } else {
+                 } else {
                     // Standard
                     const args = getArgs(inName, config);
                     args.push(outName);
@@ -182,8 +195,8 @@ export const useVideoStudio = () => {
 
     // Legacy Wrappers
     const convertVideo = async (file: File, config: VideoConfig) => { await convertMedia([file], config); };
-    const generateThumbnail = async (file: File, time: number) => { /* ... */ };
-    const createGif = async (file: File, start: number, duration: number, fps: number, width: number) => { /* ... */ };
+    const generateThumbnail = async (file: File, time: number) => { void file; void time; /* stub */ };
+    const createGif = async (file: File, start: number, duration: number, fps: number, width: number) => { void file; void start; void duration; void fps; void width; /* stub */ };
 
     return { loaded, isLoading, log, error, processList, convertMedia, convertUrl, convertVideo, thumbUrl, generateThumbnail, gifUrl, createGif, outputUrls };
 };

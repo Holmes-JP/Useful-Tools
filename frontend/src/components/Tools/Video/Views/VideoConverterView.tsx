@@ -1,15 +1,44 @@
 import { useState } from 'react';
-import { useVideoStudio, VideoOptions } from '@/hooks/useVideoStudio';
+import { useVideoStudio } from '@/hooks/useVideoStudio';
 import { useDropzone } from 'react-dropzone';
-import { Video, Download } from 'lucide-react';
+import { Video, Download, RefreshCw } from 'lucide-react';
+import clsx from 'clsx';
+import VideoSettings, { VideoConfig } from '@/components/Tools/Settings/VideoSettings';
 
 export default function VideoConverterView() {
     const { loaded, isLoading, log, convertUrl, convertVideo } = useVideoStudio();
     const [file, setFile] = useState<File | null>(null);
     
     const [config, setConfig] = useState<VideoConfig>({
-        format: 'mp4', codecVideo: 'default', codecAudio: 'default', resolution: 'original', customWidth: 1920, customHeight: 1080, bitrateVideo: '', bitrateAudio: '', frameRate: 0, mute: false, volume: 1.0, 
-        trimStart: 0, trimEnd: 0, loop: 0, transparentColor: '#000000', transparencyThreshold: 0.1
+        format: 'mp4',
+        videoCodec: 'libx264',
+        audioCodec: 'aac',
+        resolution: 'original',
+        frameRate: 'original',
+        videoBitrate: 'original',
+        audioBitrate: '192k',
+        audioVolume: '1.0',
+        trimStart: '',
+        trimEnd: '',
+        mute: false,
+        // defaults for other optional fields
+        aspectRatio: 'original',
+        rotate: '0',
+        brightness: '0',
+        contrast: '0',
+        saturation: '1',
+        deinterlace: false,
+        pixelFormat: 'original',
+        audioSampleRate: 'original',
+        audioChannels: 'original',
+        audioNormalize: false,
+        audioFadeIn: '',
+        audioFadeOut: '',
+        gifWidth: '',
+        gifLoop: '0',
+        gifFps: '10',
+        gifCompression: '2',
+        gifTransparent: false,
     });
 
     const onDrop = (files: File[]) => { if(files.length > 0) setFile(files[0]); };

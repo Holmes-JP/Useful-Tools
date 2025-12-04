@@ -7,7 +7,7 @@ export const useImageConverter = () => {
     const [isImageLoading, setIsImageLoading] = useState(false);
     const [processList, setProcessList] = useState<ProcessStatus[]>([]);
 
-    const compressImages = async (files: File[], config: ImageConfig) => {
+    const compressImages = async (files: File[], config: ImageConfig): Promise<{name: string, url: string}[]> => {
         setIsImageLoading(true);
         
         // 初期化
@@ -20,6 +20,7 @@ export const useImageConverter = () => {
         }));
         setProcessList(initialList);
 
+        const results: {name: string, url: string}[] = [];
         try {
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
@@ -68,7 +69,9 @@ export const useImageConverter = () => {
                     newList[i].name = `${file.name.split('.')[0]}.${ext}`;
                     return newList;
                 });
+                results.push({ name: `${file.name.split('.')[0]}.${ext}`, url });
             }
+            return results;
         } catch (err: any) {
              setProcessList(prev => {
                 const idx = prev.findIndex(p => p.status === 'processing');
@@ -80,6 +83,7 @@ export const useImageConverter = () => {
                 }
                 return prev;
             });
+            return results;
         } finally {
             setIsImageLoading(false);
         }

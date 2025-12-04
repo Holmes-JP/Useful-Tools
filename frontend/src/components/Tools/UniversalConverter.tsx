@@ -16,10 +16,10 @@ import { usePdfConverter } from '@/hooks/usePdfConverter';
 import { useAudioConverter } from '@/hooks/useAudioConverter';
 
 export default function UniversalConverter() {
-    const { isLoading: isVideoLoading, log: videoLog, outputUrls: videoOutputUrls, convertVideos, load: loadFFmpeg } = useVideoConverter();
+    const { isLoading: isVideoLoading, log: videoLog, outputUrls: videoOutputUrls, convertVideos } = useVideoConverter();
     const { isImageLoading, processList: imageProcessList, compressImages } = useImageConverter();
-    const { isPdfLoading, pdfLog, pdfError, pdfOutputUrl, mergePdfs, pdfToText } = usePdfConverter();
-    const { isLoading: isAudioLoading, log: audioLog, outputUrls: audioOutputUrls, convertAudios } = useAudioConverter();
+    const { isPdfLoading, pdfLog, pdfError, mergePdfs, pdfToText } = usePdfConverter();
+    const { isLoading: isAudioLoading, log: audioLog } = useAudioConverter();
 
     const [files, setFiles] = useState<File[]>([]);
     
@@ -45,11 +45,6 @@ export default function UniversalConverter() {
         return videoOutputUrls.length > 0 ? videoOutputUrls[0].url : null;
     };
 
-    const convertAudio = async (file: File, config: AudioConfig): Promise<string | null> => {
-        await convertAudios([file], config);
-        return audioOutputUrls.length > 0 ? audioOutputUrls[0].url : null;
-    };
-    
     const [videoConfig, setVideoConfig] = useState<VideoConfig>({
         format: 'mp4',
         resolution: 'original',
@@ -355,7 +350,8 @@ export default function UniversalConverter() {
                     };
                     resultUrl = await convertVideo(file, videoConfigFromImage);
                 } else {
-                    resultUrl = await compressImages([file], imageConfig);
+                    const compressed = await compressImages([file], imageConfig);
+                    resultUrl = compressed && compressed.length > 0 ? compressed[0].url : null;
                 }
             } else if (fileType === 'audio') {
                 // 音声の場合、ビデオ形式ならconvertVideoを使用

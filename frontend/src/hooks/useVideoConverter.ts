@@ -42,16 +42,20 @@ export const useVideoConverter = () => {
 
                 // Exclude mp3/wav from video processing
                 if (config.format !== 'mp3' && config.format !== 'wav') {
-                    if (config.codecVideo !== 'default') args.push('-c:v', config.codecVideo);
-                    if (config.bitrateVideo) args.push('-b:v', config.bitrateVideo);
-                    if (config.frameRate > 0) args.push('-r', config.frameRate.toString());
-                    
-                    if (config.resolution !== 'original') {
-                        const scale = config.resolution === 'custom' 
-                            ? `${config.customWidth}:${config.customHeight}` 
-                            : config.resolution === '1080p' ? '1920:-2' 
-                            : config.resolution === '720p' ? '1280:-2' 
-                            : '854:-2';
+                    // video codec
+                    if (config.videoCodec && config.videoCodec !== 'copy') args.push('-c:v', config.videoCodec);
+                    // video bitrate
+                    if (config.videoBitrate && config.videoBitrate !== 'original') args.push('-b:v', config.videoBitrate);
+                    // frame rate (VideoConfig stores as string)
+                    if (config.frameRate && config.frameRate !== 'original') args.push('-r', String(config.frameRate));
+
+                    // resolution mapping
+                    if (config.resolution && config.resolution !== 'original') {
+                        const scale = config.resolution === '1080p' ? '1920:-2'
+                            : config.resolution === '720p' ? '1280:-2'
+                            : config.resolution === '480p' ? '854:-2'
+                            : config.resolution === '360p' ? '640:-2'
+                            : '128:-2';
                         args.push('-vf', `scale=${scale}`);
                     }
                     if (config.format !== 'gif') args.push('-preset', 'ultrafast');
@@ -60,8 +64,8 @@ export const useVideoConverter = () => {
                 }
 
                 if (config.mute) args.push('-an');
-                else if (config.codecAudio !== 'default') args.push('-c:a', config.codecAudio);
-                if (config.bitrateAudio) args.push('-b:a', config.bitrateAudio);
+                else if (config.audioCodec && config.audioCodec !== 'copy') args.push('-c:a', config.audioCodec);
+                if (config.audioBitrate) args.push('-b:a', config.audioBitrate);
 
                 const outName = `out_${i}.${config.format}`;
                 args.push(outName);

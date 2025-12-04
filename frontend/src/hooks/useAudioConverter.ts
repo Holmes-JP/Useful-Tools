@@ -39,11 +39,24 @@ export const useAudioConverter = () => {
                 await ffmpeg.writeFile(inName, await fetchFile(file));
                 const args = ['-i', inName, '-vn', '-threads', '0'];
                 
-                const br = config.bitrate === 'custom' ? config.customBitrate : config.bitrate;
-                if (br) args.push('-b:a', br);
-                if (config.sampleRate > 0) args.push('-ar', config.sampleRate.toString());
-                if (config.channels !== 'original') args.push('-ac', config.channels);
-                if (config.volume !== 1.0) args.push('-af', `volume=${config.volume}`);
+                // audio codec
+                if (config.audioCodec && config.audioCodec !== 'copy') args.push('-c:a', config.audioCodec);
+                // bitrate
+                if (config.bitrate) args.push('-b:a', config.bitrate);
+                // sample rate
+                if (config.audioSampleRate && config.audioSampleRate !== 'original') args.push('-ar', config.audioSampleRate);
+                // channels mapping
+                if (config.audioChannels && config.audioChannels !== 'original') {
+                    const ch = config.audioChannels === 'stereo' ? '2'
+                        : config.audioChannels === 'mono' ? '1'
+                        : config.audioChannels === '5.1' ? '6'
+                        : config.audioChannels === '7.1' ? '8'
+                        : undefined;
+                    if (ch) args.push('-ac', ch);
+                }
+                // volume (string stored in settings)
+                const vol = parseFloat(config.audioVolume || '1.0');
+                if (!Number.isNaN(vol) && vol !== 1.0) args.push('-af', `volume=${vol}`);
 
                 const outName = `out_${i}.${config.format}`;
                 args.push(outName);
