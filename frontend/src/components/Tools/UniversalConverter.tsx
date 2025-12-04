@@ -18,7 +18,7 @@ import { useAudioConverter } from '@/hooks/useAudioConverter';
 export default function UniversalConverter() {
     const { isLoading: isVideoLoading, log: videoLog, error: videoError, convertVideo } = useVideoConverter();
     const { isImageLoading, imageLog, imageError, compressImages } = useImageConverter();
-    const { isPdfLoading, pdfLog, pdfError, mergePdfs } = usePdfConverter();
+    const { isPdfLoading, pdfLog, pdfError, mergePdfs, pdfToText } = usePdfConverter();
     const { isAudioLoading, audioLog, audioError } = useAudioConverter();
 
     const [files, setFiles] = useState<File[]>([]);
@@ -120,13 +120,15 @@ export default function UniversalConverter() {
     });
     const [docConfig, setDocConfig] = useState<DocConfig>({
         format: 'pdf',
-        mode: 'merge',
+        outputFormat: 'pdf',
+        mode: 'default',
         rotateAngle: 90,
         imageFormat: 'jpg',
         removePageRanges: '',
-        metadataTitle: '',
-        metadataAuthor: '',
-        metadataDate: ''
+        removeMetadata: true,
+        optimizeForWeb: false,
+        flattenAnnotations: false,
+        compressionLevel: 'medium'
     });
 
     const detectMode = useMemo(() => {
@@ -172,7 +174,10 @@ export default function UniversalConverter() {
             if (detectMode === 'video-single') return videoConfig.format;
             if (detectMode === 'image-batch') return imageConfig.format === 'original' ? file.name.split('.').pop() : imageConfig.format;
             if (detectMode === 'audio-single') return audioConfig.format;
-            if (detectMode === 'document') return 'pdf';
+            if (detectMode === 'document') {
+                if (docConfig.mode === 'merge') return 'pdf';
+                return docConfig.outputFormat || 'pdf';
+            }
             return undefined;
         };
         
@@ -184,6 +189,18 @@ export default function UniversalConverter() {
             error: null,
             outputFormat: getOutputFormat(f)
         })));
+
+        // ドキュメントのマージモードはファイル群を一括で処理する
+        if (detectMode === 'document' && docConfig.mode === 'merge') {
+            try {
+                const mergedUrl = await mergePdfs(files);
+                // 単一のマージ結果を返すため、results を1つに置き換える
+                setResults([{ fileName: `merged_${Date.now()}.pdf`, url: mergedUrl, isProcessing: false, error: null, outputFormat: 'pdf' }]);
+            } catch (error: any) {
+                setResults(files.map(f => ({ fileName: f.name, url: null, isProcessing: false, error: error.message || String(error), outputFormat: 'pdf' })));
+            }
+            return;
+        }
 
         // 各ファイルを順次変換
         for (let i = 0; i < files.length; i++) {
@@ -303,7 +320,11 @@ export default function UniversalConverter() {
                         resultUrl = await convertVideo(file, audioOnlyConfig);
                     }
                 } else if (detectMode === 'document') {
-                    resultUrl = await mergePdfs([file]);
+                    if (docConfig.outputFormat === 'txt') {
+                        resultUrl = await pdfToText(file as File);
+                    } else {
+                        resultUrl = await mergePdfs([file]);
+                    }
                 }
 
                 // 結果を更新

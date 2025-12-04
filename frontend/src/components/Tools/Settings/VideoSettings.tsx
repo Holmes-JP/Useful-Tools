@@ -115,10 +115,11 @@ export default function VideoSettings({ config, onChange }: Props) {
     };
 
     return (
-        <div className="space-y-4">
-            <h3 className="text-lg font-bold text-white">Video File Settings</h3>
-            
-            <div className="p-4 bg-gray-800 rounded-lg border border-gray-700">
+        <div className="p-4 bg-gray-900 rounded-lg border border-gray-700">
+            <div className="space-y-4">
+                <h3 className="text-lg font-bold text-white">Video File Settings</h3>
+
+                <div className="p-4 bg-gray-800 rounded-lg border border-gray-700">
                 <label className="block text-xs text-gray-400 mb-2">Output Format</label>
                 <select 
                     value={config.format}
@@ -735,6 +736,7 @@ export default function VideoSettings({ config, onChange }: Props) {
                     )}
                 </div>
             )}
+            </div>
         </div>
     );
 }

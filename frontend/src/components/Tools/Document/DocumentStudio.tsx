@@ -9,7 +9,7 @@ import DocumentSettings, { DocConfig } from '@/components/Tools/Settings/Documen
 export default function DocumentStudio() {
     const [files, setFiles] = useState<File[]>([]);
     const [docConfig, setDocConfig] = useState<DocConfig>({
-        format: 'pdf', mode: 'default', rotateAngle: 90, imageFormat: 'jpg', removePageRanges: '', metadataTitle: '', metadataAuthor: '', metadataDate: ''
+        format: 'pdf', mode: 'default', rotateAngle: 90, imageFormat: 'jpg', removePageRanges: '', removeMetadata: true, optimizeForWeb: false, flattenAnnotations: false, compressionLevel: 'medium'
     });
 
     const pdf = usePdfConverter();

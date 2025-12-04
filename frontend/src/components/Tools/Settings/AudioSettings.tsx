@@ -1,5 +1,7 @@
 
 
+import { useState } from 'react';
+
 export type AudioConfig = {
     format: 'mp3' | 'wav' | 'm4a' | 'aac' | 'ogg' | 'flac' | 'mp4' | 'mov' | 'avi' | 'mkv' | 'webm' | 'flv' | 'wmv' | 'm4v';
     bitrate: string;
@@ -35,9 +37,14 @@ type Props = {
 export default function AudioSettings({ config, onChange }: Props) {
     // フォーマット判定
     const isVideoFormat = ['mp4', 'mov', 'avi', 'mkv', 'webm', 'flv', 'wmv', 'm4v'].includes(config.format);
-    
+    const [openSections, setOpenSections] = useState({ audio: false, video: false });
+
+    const toggleSection = (section: keyof typeof openSections) => {
+        setOpenSections((prev) => ({ ...prev, [section]: !prev[section] }));
+    };
+
     return (
-        <div className="space-y-4">
+        <div className="space-y-4 bg-gray-900 p-4 rounded-lg border border-gray-700">
             <h3 className="text-lg font-bold text-white">Audio File Settings</h3>
             
             {/* Output Format */}
@@ -69,10 +76,19 @@ export default function AudioSettings({ config, onChange }: Props) {
                 </select>
             </div>
 
-            {/* Audio Options - 常に表示 */}
-            <div className="p-4 bg-gray-800 rounded-lg border border-gray-700 space-y-3">
-                <h4 className="text-sm font-semibold text-gray-300">Audio Options</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* Audio Options - トグル可能 */}
+            <div className="p-4 bg-gray-800 rounded-lg border border-gray-700">
+                <button
+                    type="button"
+                    onClick={() => toggleSection('audio')}
+                    className="w-full flex items-center justify-between text-sm font-semibold text-gray-300"
+                    aria-expanded={openSections.audio}
+                >
+                    <span>Audio Options</span>
+                    <span className="text-xs text-primary-400">{openSections.audio ? 'Hide' : 'Show'}</span>
+                </button>
+                {openSections.audio && (
+                    <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
                         <label className="block text-xs text-gray-400 mb-1">Audio Codec</label>
                         <select 
@@ -209,14 +225,24 @@ export default function AudioSettings({ config, onChange }: Props) {
                             <span className="text-sm text-gray-300">音量正規化 (Normalize)</span>
                         </label>
                     </div>
-                </div>
+                    </div>
+                )}
             </div>
 
             {/* Video Options - ビデオフォーマットの場合のみ表示 */}
             {isVideoFormat && (
-                <div className="p-4 bg-gray-800 rounded-lg border border-gray-700 space-y-3">
-                    <h4 className="text-sm font-semibold text-gray-300">Video Options</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="p-4 bg-gray-800 rounded-lg border border-gray-700">
+                    <button
+                        type="button"
+                        onClick={() => toggleSection('video')}
+                        className="w-full flex items-center justify-between text-sm font-semibold text-gray-300"
+                        aria-expanded={openSections.video}
+                    >
+                        <span>Video Options</span>
+                        <span className="text-xs text-primary-400">{openSections.video ? 'Hide' : 'Show'}</span>
+                    </button>
+                    {openSections.video && (
+                        <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
                             <label className="block text-xs text-gray-400 mb-1">Video Codec</label>
                             <select 
@@ -271,7 +297,8 @@ export default function AudioSettings({ config, onChange }: Props) {
                                 <option value="1M">1 Mbps (Very Low)</option>
                             </select>
                         </div>
-                    </div>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
