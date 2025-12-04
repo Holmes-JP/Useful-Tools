@@ -5,7 +5,6 @@ import clsx from 'clsx';
 // Views
 import WorldClock from './Views/WorldClock';
 import JapaneseCalendar from './Views/JapaneseCalendar';
-import DDayCounter from './Views/DDayCounter';
 import BusinessDays from './Views/BusinessDays';
 
 export default function TimeTools() {

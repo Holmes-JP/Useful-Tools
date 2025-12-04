@@ -43,6 +43,7 @@ export const useImageEditor = () => {
     const [exportFileName, setExportFileName] = useState('edited_image');
     const [enableTransparency, setEnableTransparency] = useState(false);
     const [transparencyTolerance, setTransparencyTolerance] = useState(30);
+    const [targetTransparentColor, setTargetTransparentColor] = useState<{ r: number; g: number; b: number } | null>(null);
 
     const onSelectFile = (file: File) => {
         const reader = new FileReader();
@@ -52,6 +53,7 @@ export const useImageEditor = () => {
         setExportFileName(`${base}_edited`);
         setFileName(file.name);
         setTransparencyTolerance(30);
+        setTargetTransparentColor(null);
     };
 
     const buildFilterString = (f: FilterConfig) =>
@@ -109,10 +111,11 @@ export const useImageEditor = () => {
         if (enableTransparency) {
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             const data = imageData.data;
-            const baseR = data[0];
-            const baseG = data[1];
-            const baseB = data[2];
             const tol = transparencyTolerance;
+            // Use selected target color when provided, otherwise fall back to top-left pixel
+            const baseR = targetTransparentColor ? targetTransparentColor.r : data[0];
+            const baseG = targetTransparentColor ? targetTransparentColor.g : data[1];
+            const baseB = targetTransparentColor ? targetTransparentColor.b : data[2];
             for (let i = 0; i < data.length; i += 4) {
                 const dr = Math.abs(data[i] - baseR);
                 const dg = Math.abs(data[i + 1] - baseG);
@@ -123,7 +126,7 @@ export const useImageEditor = () => {
             }
             ctx.putImageData(imageData, 0, 0);
         }
-    }, [completedCrop, filters, rotation, flipX, flipY, exportScale, enableTransparency, transparencyTolerance]);
+    }, [completedCrop, filters, rotation, flipX, flipY, exportScale, enableTransparency, transparencyTolerance, targetTransparentColor]);
 
     const download = () => {
         const canvas = previewCanvasRef.current;
@@ -163,6 +166,7 @@ export const useImageEditor = () => {
         setCompletedCrop(undefined);
         setEnableTransparency(false);
         setTransparencyTolerance(30);
+        setTargetTransparentColor(null);
     };
 
     return {
@@ -204,5 +208,7 @@ export const useImageEditor = () => {
         resetTransform,
         resetAll,
         buildFilterString,
+        targetTransparentColor,
+        setTargetTransparentColor,
     };
 };

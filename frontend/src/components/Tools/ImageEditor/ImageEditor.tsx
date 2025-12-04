@@ -23,8 +23,9 @@ export default function ImageEditor() {
         rotation, setRotation, flipX, setFlipX, flipY, setFlipY,
         exportScale, setExportScale, exportFormat, setExportFormat, exportQuality, setExportQuality,
         exportFileName, setExportFileName,
-        enableTransparency, setEnableTransparency, transparencyTolerance, setTransparencyTolerance, targetTransparentColor, setTargetTransparentColor,
-        onSelectFile, canvasPreview, download, resetFilters, resetTransform, resetAll, buildFilterString, fileName
+        enableTransparency, setEnableTransparency, transparencyTolerance, setTransparencyTolerance,
+        onSelectFile, canvasPreview, download, resetFilters, resetTransform, resetAll, buildFilterString, fileName,
+        targetTransparentColor, setTargetTransparentColor,
     } = useImageEditor();
 
     const [activeTab, setActiveTab] = useState<'crop' | 'adjust' | 'transform'>('crop');
@@ -33,7 +34,7 @@ export default function ImageEditor() {
     useEffect(() => {
         const t = setTimeout(() => canvasPreview(), 80);
         return () => clearTimeout(t);
-    }, [completedCrop, filters, rotation, flipX, flipY, exportScale, targetTransparentColor, canvasPreview]);
+    }, [completedCrop, filters, rotation, flipX, flipY, exportScale, canvasPreview]);
 
     const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
