@@ -1,62 +1,57 @@
-import { Link } from 'react-router-dom';
-import { Globe, Network, Terminal, Search } from 'lucide-react';
+import { Network } from 'lucide-react';
+import { useState } from 'react';
+import clsx from 'clsx';
+import GeneratorsPanel from './Panels/GeneratorsPanel';
+import HashAnalyzerPanel from './Panels/HashAnalyzerPanel';
+import WebToolsPanel from './Panels/WebToolsPanel';
+import NetworkUtilsPanel from './Panels/NetworkUtilsPanel';
 
 export default function DeveloperTools() {
-    const tools = [
-        {
-            title: 'Generators',
-            desc: 'UUID, Passwords, and Hashing (MD5/SHA/HMAC).',
-            path: '/dev/generator',
-            icon: Terminal,
-            color: 'bg-blue-500'
-        },
-        {
-            title: 'Hash Analyzer',
-            desc: 'Identify hash types (MD5, SHA, Bcrypt, etc).',
-            path: '/dev/hash',
-            icon: Search,
-            color: 'bg-orange-500'
-        },
-        {
-            title: 'Web Tools',
-            desc: 'JSON/YAML Converter, JWT Decoder, Regex Tester.',
-            path: '/dev/web',
-            icon: Globe,
-            color: 'bg-green-500'
-        },
-        {
-            title: 'Network Utils',
-            desc: 'IPv4 Subnet Calculator, Status Codes (Coming Soon).',
-            path: '#',
-            icon: Network,
-            color: 'bg-purple-500'
-        }
+    const [tab, setTab] = useState<'generators' | 'hash' | 'web' | 'network'>('generators');
+
+    const tabs = [
+        { id: 'generators', label: 'Generators' },
+        { id: 'hash', label: 'Hash Analyzer' },
+        { id: 'web', label: 'Web Tools' },
+        { id: 'network', label: 'Network Utils' },
     ];
 
+
     return (
-        <div className="space-y-8 p-4">
+        <div className="max-w-6xl mx-auto space-y-8">
             <div className="text-center">
-                <h2 className="text-3xl font-bold text-white">Dev & Network</h2>
-                <p className="text-gray-400 mt-2">Utilities for Developers and System Admins</p>
+                <h2 className="text-3xl font-bold text-white mb-2 flex items-center justify-center gap-3">
+                    <Network className="text-primary-500" />
+                    Dev & Network
+                </h2>
+                <p className="text-gray-500 text-sm">Utilities for Developers and System Admins</p>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {tools.map((tool) => {
-                    const Icon = tool.icon;
-                    return (
-                        <Link 
-                            key={tool.path} 
-                            to={tool.path}
-                            className={`group bg-gray-800 p-6 rounded-xl border border-gray-700 transition-all duration-200 ${tool.path === '#' ? 'opacity-60 cursor-not-allowed' : 'hover:-translate-y-1 hover:shadow-lg hover:border-gray-600'}`}
-                        >
-                            <div className={`w-12 h-12 ${tool.color} rounded-lg flex items-center justify-center text-white mb-4 shadow-lg group-hover:scale-110 transition-transform`}>
-                                <Icon size={24} />
-                            </div>
-                            <h3 className="text-lg font-bold text-white mb-2">{tool.title}</h3>
-                            <p className="text-sm text-gray-400 leading-relaxed">{tool.desc}</p>
-                        </Link>
-                    );
-                })}
+            <div className="flex justify-center gap-2 md:gap-4 overflow-x-auto pb-2">
+                {tabs.map(t => (
+                    <button
+                        key={t.id}
+                        onClick={() => setTab(t.id as any)}
+                        className={clsx(
+                            "flex items-center gap-2 px-6 py-3 rounded-full font-bold transition-all whitespace-nowrap",
+                            tab === t.id
+                                ? "bg-primary-500 text-black shadow-lg"
+                                : "bg-surface text-gray-400 hover:bg-gray-800"
+                        )}
+                    >
+                        {t.label}
+                    </button>
+                ))}
+            </div>
+
+            <div className="max-w-3xl mx-auto">
+                {(() => {
+                    if (tab === 'generators') return <GeneratorsPanel />;
+                    if (tab === 'hash') return <HashAnalyzerPanel />;
+                    if (tab === 'web') return <WebToolsPanel />;
+                    if (tab === 'network') return <NetworkUtilsPanel />;
+                    return <p className="text-gray-400">No tool selected</p>;
+                })()}
             </div>
         </div>
     );

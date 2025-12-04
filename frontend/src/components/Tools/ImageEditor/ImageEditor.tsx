@@ -25,7 +25,6 @@ export default function ImageEditor() {
         exportFileName, setExportFileName,
         enableTransparency, setEnableTransparency, transparencyTolerance, setTransparencyTolerance,
         onSelectFile, canvasPreview, download, resetFilters, resetTransform, resetAll, buildFilterString, fileName,
-        targetTransparentColor, setTargetTransparentColor,
     } = useImageEditor();
 
     const [activeTab, setActiveTab] = useState<'crop' | 'adjust' | 'transform'>('crop');
@@ -108,7 +107,6 @@ export default function ImageEditor() {
                                     filter: buildFilterString(filters),
                                     transform: `rotate(${rotation}deg) scale(${(flipX ? -1 : 1) * exportScale}, ${(flipY ? -1 : 1) * exportScale})`,
                                     transformOrigin: 'center center',
-                                    cursor: enableTransparency ? 'crosshair' : 'default',
                                 }}
                                 onLoad={(e) => {
                                     const img = e.currentTarget;
@@ -120,22 +118,6 @@ export default function ImageEditor() {
                                         y: 0
                                     });
                                     setCrop(undefined);
-                                }}
-                                onClick={(e) => {
-                                    if (!enableTransparency || !imgRef.current) return;
-                                    const rect = e.currentTarget.getBoundingClientRect();
-                                    const x = e.clientX - rect.left;
-                                    const y = e.clientY - rect.top;
-                                    const canvas = document.createElement('canvas');
-                                    const ctx = canvas.getContext('2d');
-                                    if (!ctx) return;
-                                    canvas.width = imgRef.current.naturalWidth;
-                                    canvas.height = imgRef.current.naturalHeight;
-                                    ctx.drawImage(imgRef.current, 0, 0);
-                                    const scaleX = imgRef.current.naturalWidth / rect.width;
-                                    const scaleY = imgRef.current.naturalHeight / rect.height;
-                                    const pixel = ctx.getImageData(x * scaleX, y * scaleY, 1, 1).data;
-                                    setTargetTransparentColor({ r: pixel[0], g: pixel[1], b: pixel[2] });
                                 }}
                             />
                         </ReactCrop>
@@ -265,13 +247,7 @@ export default function ImageEditor() {
                                                 onChange={(e) => setTransparencyTolerance(Number(e.target.value))}
                                                 className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-primary-500"
                                             />
-                                            <p className="text-[11px] text-gray-500 mt-1">Click the image to pick a background color. Removes pixels similar to the picked color.</p>
-                                            {targetTransparentColor && (
-                                                <div className="mt-2 flex items-center gap-2 text-xs text-gray-300">
-                                                    <span className="w-4 h-4 rounded border border-gray-600 inline-block" style={{ backgroundColor: `rgb(${targetTransparentColor.r},${targetTransparentColor.g},${targetTransparentColor.b})` }} />
-                                                    <span>{`RGB(${targetTransparentColor.r}, ${targetTransparentColor.g}, ${targetTransparentColor.b})`}</span>
-                                                </div>
-                                            )}
+                                            <p className="text-[11px] text-gray-500 mt-1">左上の色に近い領域を透過します。類似度はスライダーで調整してください。</p>
                                             <label className="mt-2 flex items-center gap-2 text-sm text-gray-300 cursor-pointer select-none">
                                                 <input
                                                     type="checkbox"

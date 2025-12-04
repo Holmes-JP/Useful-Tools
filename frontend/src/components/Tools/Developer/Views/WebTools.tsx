@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 // 【修正】* as yaml としてインポートする
 import * as yaml from 'js-yaml';
-import { jwtDecode } from 'jwt-decode';
+import jwtDecode from 'jwt-decode';
 import { FileJson, Eye, Regex } from 'lucide-react';
 import clsx from 'clsx';
 

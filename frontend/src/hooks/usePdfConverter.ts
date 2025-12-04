@@ -162,11 +162,11 @@ export const usePdfConverter = () => {
             const ab = await file.arrayBuffer();
             // dynamic import to avoid bundling pdfjs unnecessarily unless used
             // @ts-ignore - runtime import of pdfjs-dist (may not be present until npm install)
-            const pdfjs: any = await import('pdfjs-dist/legacy/build/pdf');
+            const pdfjs: any = await import('pdfjs-dist');
             
             // Provide the bundled worker URL so pdf.js can start its worker without relying on CDN paths
             try {
-                const workerSrcModule: any = await import('pdfjs-dist/legacy/build/pdf.worker.min.mjs?url');
+                const workerSrcModule: any = await import('pdfjs-dist/build/pdf.worker.min.js?url');
                 const workerSrc: string = workerSrcModule?.default || workerSrcModule;
                 // @ts-ignore - runtime assign for pdfjs
                 if (pdfjs.GlobalWorkerOptions && workerSrc) {
