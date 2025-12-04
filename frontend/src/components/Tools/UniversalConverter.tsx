@@ -16,7 +16,7 @@ import { usePdfConverter } from '@/hooks/usePdfConverter';
 import { useAudioConverter } from '@/hooks/useAudioConverter';
 
 export default function UniversalConverter() {
-    const { isLoading: isVideoLoading, log: videoLog, outputUrls: videoOutputUrls, convertVideos } = useVideoConverter();
+    const { isLoading: isVideoLoading, log: videoLog, convertVideos } = useVideoConverter();
     const { isImageLoading, processList: imageProcessList, compressImages } = useImageConverter();
     const { isPdfLoading, pdfLog, pdfError, mergePdfs, pdfToText } = usePdfConverter();
     const { isLoading: isAudioLoading, log: audioLog } = useAudioConverter();
@@ -41,8 +41,8 @@ export default function UniversalConverter() {
 
     // Wrapper functions to adapt multi-file hooks to single-file usage
     const convertVideo = async (file: File, config: VideoConfig): Promise<string | null> => {
-        await convertVideos([file], config);
-        return videoOutputUrls.length > 0 ? videoOutputUrls[0].url : null;
+        const results = await convertVideos([file], config);
+        return results && results.length > 0 ? results[0].url : null;
     };
 
     const [videoConfig, setVideoConfig] = useState<VideoConfig>({

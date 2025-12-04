@@ -16,12 +16,19 @@ export const useVideoConverter = () => {
         if (ffmpeg.loaded) return;
         ffmpeg.on('log', ({ message }) => addLog(message));
         try {
+            const baseURL = `${window.location.origin}/ffmpeg`;
+            addLog(`Loading FFmpeg from ${baseURL}...`);
             await ffmpeg.load({
-                coreURL: await toBlobURL('/ffmpeg/ffmpeg-core.js', 'text/javascript'),
-                wasmURL: await toBlobURL('/ffmpeg/ffmpeg-core.wasm', 'application/wasm'),
+                coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+                wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+                workerURL: await toBlobURL(`${baseURL}/ffmpeg-core.worker.js`, 'text/javascript'),
             });
             addLog("FFmpeg loaded.");
-        } catch (err: any) { addLog("Load Error: " + err.message); }
+        } catch (err: any) { 
+            const msg = err?.message ?? String(err);
+            addLog("Load Error: " + msg);
+            throw err;
+        }
     }, []);
 
     useEffect(() => { load(); }, [load]);
@@ -30,8 +37,22 @@ export const useVideoConverter = () => {
         const ffmpeg = ffmpegRef.current;
         setIsLoading(true); setLog([]); setOutputUrls([]);
 
+        // Ensure engine is loaded before any file operations
         try {
-            const results = [];
+            if (!ffmpeg.loaded) {
+                addLog('FFmpeg not loaded, loading engine...');
+                await load();
+                if (!ffmpeg.loaded) throw new Error('FFmpeg failed to load');
+            }
+        } catch (err: any) {
+            const msg = err?.message ?? String(err);
+            addLog('Load Error: ' + msg);
+            setIsLoading(false);
+            throw new Error(msg);
+        }
+
+        try {
+            const results: {name: string, url: string}[] = [];
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
                 addLog(`Converting ${file.name}...`);
@@ -74,14 +95,18 @@ export const useVideoConverter = () => {
                 const data = await ffmpeg.readFile(outName);
                 const url = URL.createObjectURL(new Blob([(data as any)]));
                 results.push({ name: `${file.name.split('.')[0]}.${config.format}`, url });
-                
+
                 await ffmpeg.deleteFile(inputName);
                 await ffmpeg.deleteFile(outName);
             }
             setOutputUrls(results);
             addLog("All Done!");
+            return results;
         } catch (e: any) {
-            addLog("Error: " + e.message);
+            const msg = e?.message ?? String(e);
+            addLog("Error: " + msg);
+            // rethrow so callers can handle and display proper message
+            throw e;
         } finally {
             setIsLoading(false);
         }
