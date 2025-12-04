@@ -1,13 +1,14 @@
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useArchiver, ArchiveConfig } from '@/hooks/useArchiver';
-import { Archive, Download, FileArchive, File as FileIcon, Lock, Settings2, FolderOutput, X } from 'lucide-react';
+import { Archive, Download, FileArchive, File as FileIcon, Lock, Settings2, FolderOutput, X, Square } from 'lucide-react';
 import clsx from 'clsx';
 
 export default function ArchiverView() {
-    const { isArchiving, archiveLog, extractedFiles, error, isEncrypted, zipUrl, zipName, checkEncryption, createZip, unzip, saveToFolder } = useArchiver();
+    const { isArchiving, archiveLog, extractedFiles, error, isEncrypted, zipUrl, zipName, stopRequested, requestStop, foundPassword, checkEncryption, createZip, unzip, saveToFolder } = useArchiver();
     const [mode, setMode] = useState<'compress' | 'extract'>('compress');
-    const [files, setFiles] = useState<File[]>([]);
+    const [compressFiles, setCompressFiles] = useState<File[]>([]);
+    const [extractFiles, setExtractFiles] = useState<File[]>([]);
     
     const [config, setConfig] = useState<ArchiveConfig>({
         level: 6,
@@ -18,7 +19,7 @@ export default function ArchiverView() {
     const onDrop = useCallback((acceptedFiles: File[]) => {
         if (mode === 'compress') {
             // Append new files, avoid duplicates by name+size
-            setFiles(prev => {
+            setCompressFiles(prev => {
                 const existing = new Map(prev.map(f => [`${f.name}:${f.size}`, f]));
                 for (const f of acceptedFiles) {
                     existing.set(`${f.name}:${f.size}`, f);
@@ -27,7 +28,7 @@ export default function ArchiverView() {
             });
         } else {
             // extract mode: keep single file replacement
-            setFiles(acceptedFiles);
+            setExtractFiles(acceptedFiles);
             if (acceptedFiles.length > 0) {
                 checkEncryption(acceptedFiles[0]);
             }
@@ -41,11 +42,12 @@ export default function ArchiverView() {
     });
 
     const handleExecute = () => {
-        if (files.length === 0) return;
         if (mode === 'compress') {
-            createZip(files, config);
+            if (compressFiles.length === 0) return;
+            createZip(compressFiles, config);
         } else {
-            unzip(files[0], config);
+            if (extractFiles.length === 0) return;
+            unzip(extractFiles[0], config);
         }
     };
 
@@ -113,30 +115,38 @@ export default function ArchiverView() {
                 <input {...getInputProps()} />
                 <div className="flex flex-col items-center text-gray-400">
                     {mode === 'compress' ? <Archive size={48} className="mb-2" /> : <FileArchive size={48} className="mb-2" />}
-                    <p className="font-bold text-lg">{files.length > 0 ? `${files.length} file(s) selected` : (mode === 'compress' ? 'Drop files to Zip' : 'Drop Zip to Extract')}</p>
-                    {mode === 'compress' && files.length > 0 && <p className="text-sm text-primary-400 mt-2">{files.map(f => f.name).slice(0,3).join(', ')}{files.length > 3 ? `, +${files.length-3} more` : ''}</p>}
-                    {mode === 'extract' && files.length > 0 && <p className="text-sm text-primary-400 mt-2">{files[0].name}</p>}
+                    <p className="font-bold text-lg">
+                        {mode === 'compress'
+                            ? (compressFiles.length > 0 ? `${compressFiles.length} file(s) selected` : 'Drop files to Zip')
+                            : (extractFiles.length > 0 ? `${extractFiles[0].name}` : 'Drop Zip to Extract')}
+                    </p>
+                    {mode === 'compress' && compressFiles.length > 0 && (
+                        <p className="text-sm text-primary-400 mt-2">
+                            {compressFiles.map(f => f.name).slice(0,3).join(', ')}
+                            {compressFiles.length > 3 ? `, +${compressFiles.length-3} more` : ''}
+                        </p>
+                    )}
                 </div>
             </div>
 
             {/* Compress: selected files list with remove and reset */}
-            {mode === 'compress' && files.length > 0 && (
+            {mode === 'compress' && compressFiles.length > 0 && (
                 <div className="bg-surface border border-gray-700 rounded-xl overflow-hidden animate-fade-in-up">
                     <div className="bg-gray-900 p-3 border-b border-gray-700 text-sm text-gray-400 font-bold flex justify-between items-center">
-                        <span>Selected Files ({files.length})</span>
+                        <span>Selected Files ({compressFiles.length})</span>
                         <div className="flex items-center gap-2">
-                            <button onClick={() => setFiles([])} className="text-xs bg-gray-800 px-3 py-1 rounded hover:bg-gray-700">Reset List</button>
+                            <button onClick={() => setCompressFiles([])} className="text-xs bg-gray-800 px-3 py-1 rounded hover:bg-gray-700">Reset List</button>
                         </div>
                     </div>
                     <div className="max-h-64 overflow-y-auto divide-y divide-gray-800">
-                        {files.map((f: File, i: number) => (
+                        {compressFiles.map((f: File, i: number) => (
                             <div key={`${f.name}-${f.size}-${i}`} className="p-3 flex items-center justify-between hover:bg-gray-800/50 transition">
                                 <div className="flex items-center gap-3 overflow-hidden">
                                     <FileIcon size={16} className="text-gray-500" />
                                     <span className="text-sm text-gray-200 truncate" title={f.name}>{f.name}</span>
                                     <span className="text-xs text-gray-600">{(f.size / 1024 / 1024).toFixed(2)} MB</span>
                                 </div>
-                                <button onClick={() => setFiles(prev => prev.filter((_, idx) => idx !== i))} className="p-2 bg-gray-800 hover:bg-red-600 hover:text-black rounded text-gray-400 transition" aria-label={`Remove ${f.name}`}>
+                                <button onClick={() => setCompressFiles(prev => prev.filter((_, idx) => idx !== i))} className="p-2 bg-gray-800 hover:bg-red-600 hover:text-black rounded text-gray-400 transition" aria-label={`Remove ${f.name}`}>
                                     <X size={14} />
                                 </button>
                             </div>
@@ -162,7 +172,7 @@ export default function ArchiverView() {
                 </div>
             )}
 
-            {files.length > 0 && !isArchiving && (
+            {(mode === 'compress' ? compressFiles.length > 0 : extractFiles.length > 0) && !isArchiving && (
                 <button onClick={handleExecute} className="w-full bg-primary-500 text-black font-bold py-4 rounded-xl hover:bg-primary-400 shadow-lg transition">
                     {mode === 'compress' ? 'Create Archive' : (isEncrypted ? 'Decrypt & Extract' : 'Extract Files')}
                 </button>
@@ -176,8 +186,34 @@ export default function ArchiverView() {
                 </button>
             )}
 
-            {isArchiving && <div className="text-center text-primary-400 font-mono animate-pulse">{archiveLog}</div>}
+            {isArchiving && (
+                <div className="text-center text-primary-400 font-mono animate-pulse flex items-center justify-center gap-3 min-h-[52px]">
+                    {archiveLog.startsWith('Analyzing password list:') ? (
+                        <div className="flex items-center gap-3">
+                            <span className="shrink-0">Analyzing password list:</span>
+                            <span className="inline-block w-56 truncate text-left font-mono">
+                                {archiveLog.replace('Analyzing password list:', '').trim() || '(empty)'}
+                            </span>
+                        </div>
+                    ) : (
+                        <span className="inline-block w-80 max-w-full truncate text-left">{archiveLog}</span>
+                    )}
+                    <button
+                        onClick={requestStop}
+                        disabled={stopRequested}
+                        className="ml-2 flex items-center justify-center w-8 h-8 rounded bg-red-600 text-white hover:bg-red-500 transition shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                        aria-label="Stop analysis"
+                    >
+                        <Square size={14} />
+                    </button>
+                </div>
+            )}
             {error && <div className="bg-red-900/50 border border-red-700 text-red-200 p-4 rounded-lg text-center font-bold">Error: {error}</div>}
+            {mode === 'extract' && foundPassword && !isArchiving && (
+                <div className="bg-emerald-900/40 border border-emerald-600 text-emerald-100 p-3 rounded-lg text-center font-mono">
+                    The password was found: <span className="font-bold">{foundPassword}</span>
+                </div>
+            )}
 
             {/* Results */}
             {mode === 'extract' && extractedFiles.length > 0 && (
