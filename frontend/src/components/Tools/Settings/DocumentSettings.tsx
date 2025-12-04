@@ -31,6 +31,7 @@ export default function DocumentSettings({ config, onChange, inputType }: Props)
 
     const [open, setOpen] = useState(false);
     const toggle = () => setOpen((v) => !v);
+    const isPdfOutput = (config.outputFormat || 'pdf') === 'pdf';
 
     return (
         <div className="space-y-3 bg-gray-900 p-4 rounded-lg border border-gray-700">
@@ -41,7 +42,11 @@ export default function DocumentSettings({ config, onChange, inputType }: Props)
                     <label className="block text-xs text-gray-400 mb-2">Output Format</label>
                     <select
                         value={config.outputFormat || 'pdf'}
-                        onChange={(e) => onChange({ ...config, outputFormat: e.target.value as any })}
+                        onChange={(e) => {
+                            const nextOutput = e.target.value as DocConfig['outputFormat'];
+                            const nextMode = nextOutput === 'pdf' ? config.mode : 'default';
+                            onChange({ ...config, outputFormat: nextOutput, mode: nextMode });
+                        }}
                         className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm text-white"
                     >
                         <option value="txt">Plain Text (.txt)</option>
@@ -61,28 +66,30 @@ export default function DocumentSettings({ config, onChange, inputType }: Props)
                         aria-expanded={open}
                     >
                         <span>ドキュメント設定</span>
-                        <span className="text-xs text-primary-400">{open ? '非表示' : '表示'}</span>
+                        <span className="text-xs text-primary-400">{open ? '閉じる' : '表示'}</span>
                     </button>
 
                     {open && (
                         <div className="mt-3">
-                            <div>
-                                <label className="block text-xs text-gray-400 mb-1">モード</label>
-                                <select
-                                    value={config.mode}
-                                    onChange={(e) => onChange({ ...config, mode: e.target.value as any })}
-                                    className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm text-white"
-                                >
-                                    <option value="default">デフォルト</option>
-                                    <option value="merge">PDF を結合</option>
-                                    <option value="split">PDF を分割</option>
-                                    <option value="rotate">ページを回転</option>
-                                    <option value="extract">ページを抽出</option>
-                                    <option value="compress">圧縮</option>
-                                </select>
-                            </div>
+                            {isPdfOutput && (
+                                <div>
+                                    <label className="block text-xs text-gray-400 mb-1">モード</label>
+                                    <select
+                                        value={config.mode}
+                                        onChange={(e) => onChange({ ...config, mode: e.target.value as any })}
+                                        className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm text-white"
+                                    >
+                                        <option value="default">デフォルト</option>
+                                        <option value="merge">PDFを結合</option>
+                                        <option value="split">PDFを分割</option>
+                                        <option value="rotate">ページ回転</option>
+                                        <option value="extract">ページ抽出</option>
+                                        <option value="compress">圧縮</option>
+                                    </select>
+                                </div>
+                            )}
 
-                            {config.mode === 'rotate' && (
+                            {isPdfOutput && config.mode === 'rotate' && (
                                 <div className="mt-3">
                                     <label className="block text-xs text-gray-400 mb-1">Rotation Angle</label>
                                     <select
@@ -97,9 +104,9 @@ export default function DocumentSettings({ config, onChange, inputType }: Props)
                                 </div>
                             )}
 
-                            {config.mode === 'extract' && (
+                            {isPdfOutput && config.mode === 'extract' && (
                                 <div className="mt-3">
-                                    <label className="block text-xs text-gray-400 mb-1">ページ範囲（例: 1-3,5,7-9）</label>
+                                    <label className="block text-xs text-gray-400 mb-1">ページ範囲 (例: 1-3,5,7-9)</label>
                                     <input
                                         type="text"
                                         value={config.removePageRanges}
@@ -111,25 +118,43 @@ export default function DocumentSettings({ config, onChange, inputType }: Props)
                             )}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
                                 <label className="flex items-center gap-2 text-sm">
-                                    <input type="checkbox" checked={!!config.removeMetadata} onChange={(e) => onChange({ ...config, removeMetadata: e.target.checked })} />
-                                    <span className="text-xs text-gray-400">メタデータを削除</span>
+                                    <input
+                                        type="checkbox"
+                                        checked={!!config.removeMetadata}
+                                        onChange={(e) => onChange({ ...config, removeMetadata: e.target.checked })}
+                                    />
+                                    <span className="text-xs text-gray-400">メタデータ削除</span>
                                 </label>
                                 <label className="flex items-center gap-2 text-sm">
-                                    <input type="checkbox" checked={!!config.optimizeForWeb} onChange={(e) => onChange({ ...config, optimizeForWeb: e.target.checked })} />
-                                    <span className="text-xs text-gray-400">Web表示最適化（線形化）</span>
+                                    <input
+                                        type="checkbox"
+                                        checked={!!config.optimizeForWeb}
+                                        onChange={(e) => onChange({ ...config, optimizeForWeb: e.target.checked })}
+                                    />
+                                    <span className="text-xs text-gray-400">Web最適化</span>
                                 </label>
                                 <label className="flex items-center gap-2 text-sm">
-                                    <input type="checkbox" checked={!!config.flattenAnnotations} onChange={(e) => onChange({ ...config, flattenAnnotations: e.target.checked })} />
-                                    <span className="text-xs text-gray-400">注釈をフラット化（注釈を削除）</span>
+                                    <input
+                                        type="checkbox"
+                                        checked={!!config.flattenAnnotations}
+                                        onChange={(e) => onChange({ ...config, flattenAnnotations: e.target.checked })}
+                                    />
+                                    <span className="text-xs text-gray-400">注釈をフラット化</span>
                                 </label>
-                                <div>
-                                    <label className="block text-xs text-gray-400 mb-1">圧縮レベル</label>
-                                    <select value={config.compressionLevel || 'medium'} onChange={(e) => onChange({ ...config, compressionLevel: e.target.value as any })} className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm text-white">
-                                        <option value="low">低</option>
-                                        <option value="medium">中</option>
-                                        <option value="high">高</option>
-                                    </select>
-                                </div>
+                                {isPdfOutput && config.mode === 'compress' && (
+                                    <div>
+                                        <label className="block text-xs text-gray-400 mb-1">圧縮レベル</label>
+                                        <select
+                                            value={config.compressionLevel || 'medium'}
+                                            onChange={(e) => onChange({ ...config, compressionLevel: e.target.value as any })}
+                                            className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm text-white"
+                                        >
+                                            <option value="low">低</option>
+                                            <option value="medium">中</option>
+                                            <option value="high">高</option>
+                                        </select>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
