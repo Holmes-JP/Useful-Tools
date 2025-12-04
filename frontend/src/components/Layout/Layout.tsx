@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { 
     Wand2, ShieldCheck, MessageSquarePlus, Menu, X,
     Clock, Calculator, Cast, Image as ImageIcon, Network,
-    Archive, FileText, Video, Music, FileStack, Monitor, Settings
+    Archive, FileText, Video, Music, Monitor, Settings
 } from 'lucide-react';
 import clsx from 'clsx';
 

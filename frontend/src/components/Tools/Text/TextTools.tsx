@@ -12,11 +12,11 @@ export default function TextTools() {
     const [tab, setTab] = useState<'analyzer' | 'diff' | 'md' | 'ocr' | 'sign'>('analyzer');
 
     const tabs = [
-        { id: 'analyzer', label: 'Analyzer', icon: FileText },
-        { id: 'diff', label: 'Diff', icon: Split },
+        { id: 'analyzer', label: 'アナライザー', icon: FileText },
+        { id: 'diff', label: '差分', icon: Split },
         { id: 'md', label: 'Markdown', icon: FileCode },
         { id: 'ocr', label: 'OCR', icon: ScanText },
-        { id: 'sign', label: 'Signature', icon: PenTool },
+        { id: 'sign', label: '署名', icon: PenTool },
     ];
 
     return (

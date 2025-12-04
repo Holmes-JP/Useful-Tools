@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Clock, Calendar, Calculator, Briefcase } from 'lucide-react';
+import { Clock, Calendar, Briefcase } from 'lucide-react';
 import clsx from 'clsx';
 
 // Views
@@ -9,12 +9,11 @@ import DDayCounter from './Views/DDayCounter';
 import BusinessDays from './Views/BusinessDays';
 
 export default function TimeTools() {
-    const [activeTab, setActiveTab] = useState<'clock' | 'calendar' | 'dday' | 'business'>('clock');
+    const [activeTab, setActiveTab] = useState<'clock' | 'calendar' | 'business'>('clock');
 
     const tabs = [
         { id: 'clock', label: 'World Clock', icon: Clock },
         { id: 'calendar', label: 'Japan Calendar', icon: Calendar },
-        { id: 'dday', label: 'Date Calculator', icon: Calculator },
         { id: 'business', label: 'Business Days', icon: Briefcase },
     ];
 
@@ -52,7 +51,6 @@ export default function TimeTools() {
             <div className="min-h-[400px]">
                 {activeTab === 'clock' && <WorldClock />}
                 {activeTab === 'calendar' && <JapaneseCalendar />}
-                {activeTab === 'dday' && <DDayCounter />}
                 {activeTab === 'business' && <BusinessDays />}
             </div>
         </div>

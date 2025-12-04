@@ -17,11 +17,11 @@ export default function TextAnalyzer() {
             {/* スタッツ表示 */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 {[
-                    { label: 'Characters', val: stats.chars },
-                    { label: 'w/o Spaces', val: stats.charsNoSpace },
-                    { label: 'Words', val: stats.words },
-                    { label: 'Lines', val: stats.lines },
-                    { label: 'Bytes', val: stats.bytes }
+                    { label: '文字数', val: stats.chars },
+                    { label: '空白除く文字数', val: stats.charsNoSpace },
+                    { label: '単語数', val: stats.words },
+                    { label: '行数', val: stats.lines },
+                    { label: 'バイト数', val: stats.bytes }
                 ].map((s) => (
                     <div key={s.label} className="bg-gray-900 border border-gray-700 p-3 rounded-xl text-center">
                         <div className="text-xs text-gray-500 uppercase font-bold mb-1">{s.label}</div>
@@ -34,7 +34,7 @@ export default function TextAnalyzer() {
             <div className="bg-surface border border-gray-700 p-4 rounded-xl relative">
                 <div className="flex justify-between items-center mb-2">
                     <h3 className="text-primary-400 font-bold flex items-center gap-2">
-                        <FileText size={18} /> Text Input
+                        <FileText size={18} /> テキスト入力
                     </h3>
                     <div className="flex gap-2">
                         <button onClick={() => navigator.clipboard.writeText(text)} className="p-2 hover:bg-gray-800 rounded text-gray-400 hover:text-white transition" title="Copy">
@@ -49,7 +49,7 @@ export default function TextAnalyzer() {
                     value={text}
                     onChange={(e) => setText(e.target.value)}
                     className="w-full h-96 bg-gray-900 border border-gray-600 rounded-lg p-4 text-white font-mono text-sm focus:border-primary-500 focus:outline-none resize-y"
-                    placeholder="Type or paste your text here..."
+                    placeholder="テキストを入力または貼り付けてください..."
                 />
             </div>
         </div>

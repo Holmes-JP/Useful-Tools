@@ -130,7 +130,7 @@ export default function UniversalConverter() {
         deinterlace: false,
         pixelFormat: 'original'
     });
-    const [docConfig, setDocConfig] = useState<DocConfig>({
+    const [docConfig] = useState<DocConfig>({
         format: 'pdf',
         outputFormat: 'pdf',
         mode: 'default',
