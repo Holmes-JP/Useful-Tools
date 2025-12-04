@@ -29,8 +29,10 @@ export const useImageConverter = () => {
             
             setOutputUrl(url);
             setLog(`Done! ${(compressedFile.size / 1024).toFixed(1)} KB`);
+            return url;
         } catch (error: any) {
             setError(error.message);
+            return null;
         } finally {
             setIsLoading(false);
         }

@@ -1,12 +1,9 @@
-import React, { useState } from 'react';
 import { Archive } from 'lucide-react';
-import clsx from 'clsx';
 import ArchiverView from './Views/ArchiverView';
 
 export default function FileTools() {
     // PDF Kit は削除されたため、タブ管理も不要になりArchiverViewを直接表示でも良いが
     // 将来の拡張性のため構造は残す
-    const [tab, setTab] = useState<'zip'>('zip');
 
     return (
         <div className="max-w-4xl mx-auto space-y-8">

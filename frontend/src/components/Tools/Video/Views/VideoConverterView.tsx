@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useVideoStudio, VideoOptions } from '@/hooks/useVideoStudio';
 import { useDropzone } from 'react-dropzone';
 import { Video, Download } from 'lucide-react';
-import clsx from 'clsx';
 
 export default function VideoConverterView() {
     const { isLoading, log, convertUrl, convertVideo } = useVideoStudio();

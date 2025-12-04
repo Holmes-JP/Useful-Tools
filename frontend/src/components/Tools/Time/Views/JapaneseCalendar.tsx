@@ -1,10 +1,8 @@
-import React, { useState } from 'react';
-import { getYear } from 'date-fns';
-import { CalendarDays, ArrowRightLeft } from 'lucide-react';
+import { useState } from 'react';
+import { CalendarDays } from 'lucide-react';
 
 export default function JapaneseCalendar() {
     const [year, setYear] = useState<number>(new Date().getFullYear());
-    const [mode, setMode] = useState<'ad_to_jp' | 'jp_to_ad'>('ad_to_jp');
 
     // 和暦データ
     const eras = [

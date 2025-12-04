@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { 
     Clock, Hash, Copy, ExternalLink, Dices, Shuffle, PieChart, 
     ScrollText, Type, Hourglass, Timer, Image, Grid3X3, PartyPopper, BarChart3
@@ -40,9 +40,8 @@ export default function StreamerDashboard() {
     // 1. Clock
     const [clockColor, setClockColor] = useState('#ffffff');
     const [clockBg, setClockBg] = useState('transparent');
-    const [clockFont, setClockFont] = useState('sans-serif');
     const [showSeconds, setShowSeconds] = useState(true);
-    const clockUrl = `${baseUrl}/streamer/view/clock?color=${encodeURIComponent(clockColor)}&bg=${encodeURIComponent(clockBg)}&font=${clockFont}&sec=${showSeconds}`;
+    const clockUrl = `${baseUrl}/streamer/view/clock?color=${encodeURIComponent(clockColor)}&bg=${encodeURIComponent(clockBg)}&sec=${showSeconds}`;
 
     // 2. Counter
     const [counterColor, setCounterColor] = useState('#00ff00');

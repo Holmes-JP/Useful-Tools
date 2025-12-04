@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 // 【修正】* as yaml としてインポートする
 import * as yaml from 'js-yaml';
 import { jwtDecode } from 'jwt-decode';

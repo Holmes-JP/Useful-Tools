@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { format, addDays, isWeekend, differenceInDays, isSameDay } from 'date-fns';
 import JapaneseHolidays from 'japanese-holidays';
 import { Briefcase, Calculator } from 'lucide-react';

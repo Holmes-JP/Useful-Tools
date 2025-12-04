@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Copy, RefreshCw, Key, Fingerprint, Hash, Settings2 } from 'lucide-react';
 import { useHashGenerator, SaltMode } from '../../../../hooks/useHashGenerator';
