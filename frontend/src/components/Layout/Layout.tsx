@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { 
     Wand2, ShieldCheck, MessageSquarePlus, Menu, X,
     Clock, Calculator, Cast, Image as ImageIcon, Network,
-    Archive, FileText, Video, Music, FileStack // 修正: FileStackを追加
+    Archive, FileText, Video, Music, FileStack, Monitor, Settings
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -16,21 +16,23 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { path: '/doc', label: 'Document Studio', icon: FileStack },
         { path: '/video', label: 'Video Studio', icon: Video },
         { path: '/audio', label: 'Audio Lab', icon: Music },
+        { path: '/editor', label: 'Image Editor', icon: ImageIcon },
         { path: '/file', label: 'File Master', icon: Archive },
         { path: '/text', label: 'Text & Code', icon: FileText },
         { path: '/time', label: 'Time Tools', icon: Clock },
         { path: '/calc', label: 'Calculator', icon: Calculator },
-        { path: '/editor', label: 'Image Editor', icon: ImageIcon },
         { path: '/dev', label: 'Dev & Network', icon: Network },
+        { path: '/sys', label: 'System Info', icon: Monitor },
         { path: '/streamer', label: 'Streamer Tools', icon: Cast },
         { path: '/privacy', label: 'Privacy & Security', icon: ShieldCheck },
         { path: '/feedback', label: 'Request & Feedback', icon: MessageSquarePlus },
+        { path: '/settings', label: 'Global Settings', icon: Settings },
     ];
 
     const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
 
     return (
-        <div className="min-h-screen flex font-sans">
+        <div className="min-h-screen flex font-sans bg-black text-white">
             <button onClick={toggleSidebar} className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-gray-900 text-white rounded-md shadow-md border border-gray-700">
                 {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -39,7 +41,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2"><Wand2 className="text-primary-400" /><span className="bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text text-transparent">Useful Tools</span></h1>
                     <p className="text-xs text-gray-500 mt-2 font-mono">Serverless & Secure</p>
                 </div>
-                <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+                <nav className="flex-1 p-4 space-y-1 overflow-y-auto custom-scrollbar">
                     {navItems.map((item) => {
                         const Icon = item.icon;
                         const isActive = location.pathname === item.path;
@@ -53,7 +55,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </aside>
             <main className="flex-1 p-4 lg:p-8 overflow-y-auto h-screen relative">
                 <div className="absolute top-0 left-0 w-full h-96 bg-primary-500/5 blur-3xl -z-10 pointer-events-none rounded-full translate-y-[-50%]" />
-                <div className="max-w-5xl mx-auto pt-10 lg:pt-0 pb-20">{children}</div>
+                <div className="max-w-6xl mx-auto pt-10 lg:pt-0 pb-20">{children}</div>
             </main>
             {isSidebarOpen && <div onClick={() => setSidebarOpen(false)} className="fixed inset-0 bg-black/50 z-30 lg:hidden" />}
         </div>
