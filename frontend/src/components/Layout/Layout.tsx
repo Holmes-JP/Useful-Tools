@@ -13,7 +13,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
     const navItems = [
         { path: '/', label: 'Universal Converter', icon: Wand2 },
-        { path: '/doc', label: 'Document Studio', icon: FileStack },
         { path: '/video', label: 'Video Studio', icon: Video },
         { path: '/audio', label: 'Audio Lab', icon: Music },
         { path: '/editor', label: 'Image Editor', icon: ImageIcon },
@@ -32,7 +31,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
 
     return (
-        <div className="min-h-screen flex font-sans bg-black text-white">
+        <div className="relative min-h-screen flex font-sans text-white overflow-hidden">
             <button onClick={toggleSidebar} className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-gray-900 text-white rounded-md shadow-md border border-gray-700">
                 {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -53,9 +52,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     })}
                 </nav>
             </aside>
-            <main className="flex-1 p-4 lg:p-8 overflow-y-auto h-screen relative">
-                <div className="absolute top-0 left-0 w-full h-96 bg-primary-500/5 blur-3xl -z-10 pointer-events-none rounded-full translate-y-[-50%]" />
-                <div className="max-w-6xl mx-auto pt-10 lg:pt-0 pb-20">{children}</div>
+            <main className="flex-1 p-3 sm:p-5 lg:p-8 overflow-y-auto h-screen relative bg-[#050712] text-slate-100 overflow-hidden">
+                <div className="absolute inset-0 w-full h-full bg-[radial-gradient(circle_at_15%_25%,rgba(14,165,233,0.14)_0,transparent_32%),radial-gradient(circle_at_80%_10%,rgba(59,130,246,0.12)_0,transparent_30%),radial-gradient(circle_at_20%_85%,rgba(52,211,153,0.12)_0,transparent_36%),radial-gradient(circle_at_80%_80%,rgba(236,72,153,0.12)_0,transparent_32%)] blur-3xl -z-10 pointer-events-none" />
+                <div className="w-full max-w-[1400px] mx-auto px-2 sm:px-4 pt-6 lg:pt-2 pb-16">{children}</div>
             </main>
             {isSidebarOpen && <div onClick={() => setSidebarOpen(false)} className="fixed inset-0 bg-black/50 z-30 lg:hidden" />}
         </div>

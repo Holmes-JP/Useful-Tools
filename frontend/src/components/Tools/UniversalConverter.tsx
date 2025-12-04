@@ -8,7 +8,7 @@ import Head from '@/components/Head';
 import VideoSettings, { VideoConfig } from './Settings/VideoSettings';
 import ImageSettings, { ImageConfig } from './Settings/ImageSettings';
 import AudioSettings, { AudioConfig } from './Settings/AudioSettings';
-import DocumentSettings, { DocConfig } from './Settings/DocumentSettings';
+import type { DocConfig } from './Settings/DocumentSettings';
 
 import { useVideoConverter } from '@/hooks/useVideoConverter';
 import { useImageConverter } from '@/hooks/useImageConverter';
@@ -560,49 +560,54 @@ export default function UniversalConverter() {
     
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 py-8 px-4">
+        <div className="relative min-h-screen bg-slate-950 text-slate-100 overflow-hidden">
+            <div className="pointer-events-none absolute inset-0 opacity-40 bg-[radial-gradient(circle_at_20%_20%,#0ea5e9_0,transparent_26%),radial-gradient(circle_at_85%_10%,#22c55e_0,transparent_22%),radial-gradient(circle_at_55%_85%,#6366f1_0,transparent_24%)]" />
             <Head title="Universal Converter" description="Convert videos, compress images, merge PDFs, and convert audio files - all in your browser" />
             
-            {/* ヘッダー */}
-            <div className="max-w-6xl mx-auto mb-8">
-                <div className="text-center">
-                    <h1 className="text-4xl font-bold text-white mb-3 bg-gradient-to-r from-primary-400 to-blue-500 bg-clip-text text-transparent">
-                        Universal Converter
-                    </h1>
-                    <p className="text-gray-400 text-lg">すべての変換をブラウザで完結 - 動画・画像・音声・ドキュメント</p>
+            <div className="relative max-w-6xl mx-auto px-4 py-10 space-y-10">
+                {/* ヘッダー */}
+                <div className="flex flex-wrap items-start justify-between gap-6">
+                    <div className="space-y-3">
+                            <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white">Universal Converter</h1>
+                        </div>
+                    <div className="hidden sm:flex items-center gap-3 px-4 py-3 rounded-2xl border border-slate-800/70 bg-white/5 shadow-lg shadow-primary-500/10">
+                        <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                        <span className="text-sm text-slate-200">ドラッグ & ドロップ対応 / ブラウザ内完結</span>
+                    </div>
                 </div>
-            </div>
 
-            <div className="max-w-6xl mx-auto space-y-6">
+            <div className="space-y-8">
                 {/* ファイルドロップゾーン */}
-                <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-700/50 p-6">
+                <div className="bg-slate-900/70 backdrop-blur-sm rounded-3xl shadow-[0_28px_80px_-40px_rgba(0,0,0,0.9)] border border-slate-800/70 p-6">
                     <div {...getRootProps()} className={clsx(
-                        "border-2 border-dashed rounded-xl p-16 text-center cursor-pointer transition-all duration-300",
+                        "rounded-2xl border border-dashed p-10 sm:p-12 text-center cursor-pointer transition-all duration-300",
                         isDragActive 
-                            ? "border-primary-500 bg-primary-500/20 scale-[1.02]" 
-                            : "border-gray-600 hover:border-primary-400 hover:bg-gray-700/30"
+                            ? "border-primary-400 bg-primary-400/10 shadow-[0_10px_40px_-25px_rgba(14,165,233,0.8)] scale-[1.01]"
+                            : "border-slate-700 hover:border-primary-400 hover:bg-slate-800/60"
                     )}>
                         <input {...getInputProps()} />
                         {files.length > 0 ? (
-                            <div className="space-y-2">
-                                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary-500/20 mb-3">
-                                    <Archive size={32} className="text-primary-400" />
+                            <div className="space-y-3">
+                                <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary-500/15 border border-primary-500/30 mx-auto">
+                                    <Archive size={26} className="text-primary-300" />
                                 </div>
-                                <p className="text-xl font-semibold text-white">{files.length} ファイル選択中</p>
-                                <p className="text-sm text-gray-400">クリックまたはドラッグで追加</p>
+                                <p className="text-lg font-semibold text-white">{files.length} ファイル選択中</p>
+                                <p className="text-sm text-slate-400">さらにドラッグ & ドロップ、またはクリックで追加</p>
                             </div>
                         ) : (
-                            <div className="space-y-3">
-                                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-primary-500/20 to-blue-500/20 mb-2">
-                                    <Download size={40} className="text-primary-400" />
+                            <div className="space-y-4">
+                                <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-primary-500/20 to-cyan-500/15 border border-slate-800/60 mx-auto">
+                                    <Download size={40} className="text-primary-300" />
                                 </div>
-                                <p className="text-xl font-semibold text-white mb-2">ファイルをドラッグ&ドロップ</p>
-                                <p className="text-gray-400">または クリックしてファイルを選択</p>
-                                <div className="flex flex-wrap gap-2 justify-center mt-4 text-xs text-gray-500">
-                                    <span className="px-3 py-1 bg-gray-700/50 rounded-full">動画</span>
-                                    <span className="px-3 py-1 bg-gray-700/50 rounded-full">画像</span>
-                                    <span className="px-3 py-1 bg-gray-700/50 rounded-full">音声</span>
-                                    <span className="px-3 py-1 bg-gray-700/50 rounded-full">PDF・テキスト</span>
+                                <div className="space-y-1">
+                                    <p className="text-xl font-semibold text-white">ファイルをドラッグ & ドロップ</p>
+                                    <p className="text-slate-400 text-sm">またはクリックして選択。動画 / 画像 / 音声 / PDF に対応</p>
+                                </div>
+                                <div className="flex flex-wrap gap-2 justify-center mt-2 text-xs text-slate-300">
+                                    <span className="px-3 py-1 rounded-full border border-slate-700/70 bg-slate-800/70">動画</span>
+                                    <span className="px-3 py-1 rounded-full border border-slate-700/70 bg-slate-800/70">画像</span>
+                                    <span className="px-3 py-1 rounded-full border border-slate-700/70 bg-slate-800/70">音声</span>
+                                    <span className="px-3 py-1 rounded-full border border-slate-700/70 bg-slate-800/70">PDF / テキスト</span>
                                 </div>
                             </div>
                         )}
@@ -628,25 +633,25 @@ export default function UniversalConverter() {
                                 {files.map((file, index) => {
                                     const fileType = detectFileType(file);
                                     const typeColors = {
-                                        video: 'from-purple-500/20 to-pink-500/20 border-purple-500/30',
-                                        image: 'from-blue-500/20 to-cyan-500/20 border-blue-500/30',
-                                        audio: 'from-green-500/20 to-emerald-500/20 border-green-500/30',
-                                        document: 'from-orange-500/20 to-yellow-500/20 border-orange-500/30',
-                                        unknown: 'from-gray-500/20 to-gray-600/20 border-gray-500/30'
+                                        video: 'border-primary-400/60',
+                                        image: 'border-cyan-400/60',
+                                        audio: 'border-emerald-400/60',
+                                        document: 'border-amber-400/60',
+                                        unknown: 'border-slate-700/70'
                                     };
                                     return (
                                         <div 
                                             key={index}
                                             className={clsx(
-                                                "group relative flex items-center justify-between bg-gradient-to-br backdrop-blur-sm border rounded-xl p-4 hover:scale-[1.02] transition-all duration-200",
+                                                "group relative flex items-center justify-between rounded-xl p-4 transition-all duration-200 border bg-slate-900/80 hover:-translate-y-1 hover:border-primary-400/70 shadow-sm shadow-black/30",
                                                 typeColors[fileType]
                                             )}
                                         >
                                             <div className="flex-1 min-w-0 pr-3">
-                                                <p className="text-sm font-medium text-white truncate mb-1">{file.name}</p>
-                                                <div className="flex items-center gap-3 text-xs text-gray-400">
+                                                <p className="text-sm font-semibold text-white truncate mb-1">{file.name}</p>
+                                                <div className="flex items-center gap-3 text-xs text-slate-400">
                                                     <span>{(file.size / 1024 / 1024).toFixed(2)} MB</span>
-                                                    <span className="px-2 py-0.5 bg-gray-700/50 rounded text-gray-300">
+                                                    <span className="px-2 py-0.5 rounded border border-slate-700/70 bg-slate-800/80 text-slate-200">
                                                         {fileType === 'video' ? '動画' : 
                                                          fileType === 'image' ? '画像' : 
                                                          fileType === 'audio' ? '音声' : 
@@ -656,7 +661,7 @@ export default function UniversalConverter() {
                                             </div>
                                             <button
                                                 onClick={() => removeFile(index)}
-                                                className="p-2 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/20 transition-all"
+                                                className="p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all"
                                                 aria-label="Remove file"
                                             >
                                                 <X size={18} />
@@ -673,39 +678,35 @@ export default function UniversalConverter() {
                 {files.length > 0 && (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {fileTypeStats.hasVideo && (
-                            <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 backdrop-blur-sm rounded-2xl border border-purple-500/30 p-6 shadow-xl">
+                            <div className="rounded-2xl border border-slate-800/80 bg-slate-900/70 shadow-[0_18px_60px_-40px_rgba(0,0,0,0.85)] ring-1 ring-white/5">
                                 <VideoSettings config={videoConfig} onChange={setVideoConfig} />
                             </div>
                         )}
                         {fileTypeStats.hasImage && (
-                            <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 backdrop-blur-sm rounded-2xl border border-blue-500/30 p-6 shadow-xl">
+                            <div className="rounded-2xl border border-slate-800/80 bg-slate-900/70 shadow-[0_18px_60px_-40px_rgba(0,0,0,0.85)] ring-1 ring-white/5">
                                 <ImageSettings config={imageConfig} onChange={setImageConfig} />
                             </div>
                         )}
                         {fileTypeStats.hasAudio && (
-                            <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 backdrop-blur-sm rounded-2xl border border-green-500/30 p-6 shadow-xl">
+                            <div className="rounded-2xl border border-slate-800/80 bg-slate-900/70 shadow-[0_18px_60px_-40px_rgba(0,0,0,0.85)] ring-1 ring-white/5">
                                 <AudioSettings config={audioConfig} onChange={setAudioConfig} />
                             </div>
                         )}
-                        {fileTypeStats.hasDocument && (
-                            <div className="bg-gradient-to-br from-orange-500/10 to-yellow-500/10 backdrop-blur-sm rounded-2xl border border-orange-500/30 p-6 shadow-xl">
-                                <DocumentSettings config={docConfig} onChange={setDocConfig} inputType={fileTypeStats.documentFiles[0]?.type || ''} />
-                            </div>
-                        )}
+                        {/* Document settings panel removed */}
                     </div>
                 )}
 
                 {/* 変換ボタン */}
                 {files.length > 0 && (
-                    <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-700/50 p-6">
+                    <div className="bg-slate-900/70 backdrop-blur-sm rounded-2xl border border-slate-800/80 p-6 shadow-[0_18px_60px_-40px_rgba(0,0,0,0.85)]">
                         <button 
                             onClick={handleAction} 
                             disabled={isProcessing} 
                             className={clsx(
                                 "w-full py-5 rounded-xl font-bold text-lg transition-all duration-300 shadow-lg",
                                 isProcessing 
-                                    ? "bg-gray-600 text-gray-400 cursor-not-allowed" 
-                                    : "bg-gradient-to-r from-primary-500 to-blue-500 text-white hover:from-primary-400 hover:to-blue-400 hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98]"
+                                    ? "bg-slate-800 text-slate-500 cursor-not-allowed"
+                                    : "bg-gradient-to-r from-primary-300 via-cyan-300 to-emerald-300 text-slate-950 hover:shadow-[0_15px_55px_-25px_rgba(34,197,235,0.9)] hover:-translate-y-0.5 active:translate-y-0"
                             )}
                         >
                             {isProcessing ? (
@@ -722,7 +723,7 @@ export default function UniversalConverter() {
 
                 {/* 変換結果 */}
                 {results.length > 0 && (
-                    <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-700/50 p-6 shadow-xl">
+                    <div className="bg-slate-900/70 backdrop-blur-sm rounded-2xl border border-slate-800/80 p-6 shadow-[0_18px_60px_-40px_rgba(0,0,0,0.85)]">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-xl font-semibold text-white flex items-center gap-2">
                                 <div className="w-1 h-6 bg-green-500 rounded-full"></div>
@@ -743,24 +744,24 @@ export default function UniversalConverter() {
                                 <div
                                     key={index}
                                     className={clsx(
-                                        "flex items-center justify-between bg-gray-700/30 backdrop-blur-sm border rounded-xl p-4 transition-all duration-200",
-                                        result.isProcessing ? "border-primary-500/50 opacity-70" : 
-                                        result.error ? "border-red-500/50" : 
-                                        "border-gray-600/50 hover:border-green-500/50"
+                                        "flex items-center justify-between bg-slate-900/80 backdrop-blur-sm border rounded-xl p-4 transition-all duration-200 shadow-sm shadow-black/30",
+                                        result.isProcessing ? "border-primary-400/60 opacity-80" : 
+                                        result.error ? "border-red-400/60" : 
+                                        "border-slate-800/80 hover:border-emerald-400/60"
                                     )}
                                 >
                                     <div className="flex-1 min-w-0 flex items-center gap-4">
                                         {result.isProcessing && (
-                                            <Loader2 size={20} className="text-primary-500 animate-spin flex-shrink-0" />
+                                            <Loader2 size={20} className="text-primary-400 animate-spin flex-shrink-0" />
                                         )}
                                         {!result.isProcessing && result.url && (
-                                            <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0">
-                                                <Download size={20} className="text-green-400" />
+                                            <div className="w-10 h-10 rounded-lg bg-emerald-500/15 border border-emerald-400/50 flex items-center justify-center flex-shrink-0">
+                                                <Download size={20} className="text-emerald-300" />
                                             </div>
                                         )}
                                         {!result.isProcessing && result.error && (
-                                            <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center flex-shrink-0">
-                                                <X size={20} className="text-red-400" />
+                                            <div className="w-10 h-10 rounded-lg bg-red-500/15 border border-red-400/50 flex items-center justify-center flex-shrink-0">
+                                                <X size={20} className="text-red-300" />
                                             </div>
                                         )}
                                         <div className="flex-1 min-w-0">
@@ -781,17 +782,17 @@ export default function UniversalConverter() {
                                             )}
                                         </div>
                                     </div>
-                                    <button
-                                        onClick={() => result.url && downloadFile(result.url, result.fileName, result.outputFormat)}
-                                        disabled={!result.url || result.isProcessing}
-                                        className={clsx(
+                                        <button
+                                            onClick={() => result.url && downloadFile(result.url, result.fileName, result.outputFormat)}
+                                            disabled={!result.url || result.isProcessing}
+                                            className={clsx(
                                             "ml-4 px-4 py-2 rounded-lg font-medium text-sm transition-all",
                                             result.url && !result.isProcessing
-                                                ? "bg-green-500/20 text-green-400 hover:bg-green-500/30 hover:text-green-300 cursor-pointer"
-                                                : "bg-gray-700/30 text-gray-600 cursor-not-allowed"
-                                        )}
-                                        aria-label="Download file"
-                                    >
+                                                ? "bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 hover:text-emerald-200 cursor-pointer border border-emerald-400/40"
+                                                : "bg-slate-800/60 text-slate-500 border border-slate-800 cursor-not-allowed"
+                                            )}
+                                            aria-label="Download file"
+                                        >
                                         <Download size={18} />
                                     </button>
                                 </div>
@@ -802,25 +803,26 @@ export default function UniversalConverter() {
 
                 {/* ログ表示 */}
                 {(isProcessing || logText || detailedLogs.length > 0) && (
-                    <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-700/50 p-6 shadow-xl">
-                        <h3 className="text-sm font-semibold text-gray-400 mb-3 flex items-center gap-2">
-                            <div className="w-1 h-4 bg-gray-500 rounded-full"></div>
+                    <div className="bg-slate-900/70 backdrop-blur-sm rounded-2xl border border-slate-800/80 p-6 shadow-[0_18px_60px_-40px_rgba(0,0,0,0.85)]">
+                        <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+                            <div className="w-1 h-4 bg-primary-400 rounded-full"></div>
                             処理ログ
                         </h3>
-                        <div ref={logRef} className="bg-black/50 backdrop-blur-sm p-4 rounded-xl text-xs font-mono h-40 overflow-y-auto border border-gray-700/50 text-gray-300 whitespace-pre-wrap">
+                        <div ref={logRef} className="bg-slate-950/80 backdrop-blur-sm p-4 rounded-xl text-xs font-mono h-40 overflow-y-auto border border-slate-800/80 text-slate-200 whitespace-pre-wrap">
                             {[
                                 ...detailedLogs,
                                 ...(logText ? [logText] : [])
                             ].filter(Boolean).join('\n')}
                         </div>
                         {errorText && (
-                            <div className="mt-3 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
-                                <p className="text-red-400 font-medium text-sm">{errorText}</p>
+                            <div className="mt-3 p-3 bg-red-500/10 border border-red-500/40 rounded-lg">
+                                <p className="text-red-300 font-medium text-sm">{errorText}</p>
                             </div>
                         )}
                     </div>
                 )}
             </div>
+        </div>
         </div>
     );
 }

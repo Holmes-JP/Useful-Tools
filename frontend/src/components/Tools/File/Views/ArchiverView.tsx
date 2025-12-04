@@ -1,11 +1,11 @@
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useArchiver, ArchiveConfig } from '@/hooks/useArchiver';
-import { Archive, Download, FileArchive, File as FileIcon, Lock, Settings2, FolderOutput } from 'lucide-react';
+import { Archive, Download, FileArchive, File as FileIcon, Lock, Settings2, FolderOutput, X } from 'lucide-react';
 import clsx from 'clsx';
 
 export default function ArchiverView() {
-    const { isArchiving, archiveLog, extractedFiles, error, isEncrypted, checkEncryption, createZip, unzip, saveToFolder } = useArchiver();
+    const { isArchiving, archiveLog, extractedFiles, error, isEncrypted, zipUrl, zipName, checkEncryption, createZip, unzip, saveToFolder } = useArchiver();
     const [mode, setMode] = useState<'compress' | 'extract'>('compress');
     const [files, setFiles] = useState<File[]>([]);
     
@@ -16,11 +16,23 @@ export default function ArchiverView() {
     });
 
     const onDrop = useCallback((acceptedFiles: File[]) => {
-        setFiles(acceptedFiles);
-        if (mode === 'extract' && acceptedFiles.length > 0) {
-            checkEncryption(acceptedFiles[0]);
+        if (mode === 'compress') {
+            // Append new files, avoid duplicates by name+size
+            setFiles(prev => {
+                const existing = new Map(prev.map(f => [`${f.name}:${f.size}`, f]));
+                for (const f of acceptedFiles) {
+                    existing.set(`${f.name}:${f.size}`, f);
+                }
+                return Array.from(existing.values());
+            });
+        } else {
+            // extract mode: keep single file replacement
+            setFiles(acceptedFiles);
+            if (acceptedFiles.length > 0) {
+                checkEncryption(acceptedFiles[0]);
+            }
         }
-    }, [mode]);
+    }, [mode, checkEncryption]);
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
         onDrop,
@@ -37,6 +49,14 @@ export default function ArchiverView() {
         }
     };
 
+    const handleDownloadArchive = () => {
+        if (!zipUrl) return;
+        const a = document.createElement('a');
+        a.href = zipUrl;
+        a.download = zipName || 'archive.zip';
+        a.click();
+    };
+
     const handleDownload = (fileData: Uint8Array, fileName: string) => {
         const blob = new Blob([fileData as any]);
         const url = URL.createObjectURL(blob);
@@ -49,10 +69,10 @@ export default function ArchiverView() {
     return (
         <div className="space-y-6 animate-fade-in-up">
             <div className="flex gap-4 border-b border-gray-700 pb-1">
-                <button onClick={() => { setMode('compress'); setFiles([]); }} className={clsx("pb-2 px-4 font-bold flex items-center gap-2", mode === 'compress' ? "text-primary-500 border-b-2 border-primary-500" : "text-gray-500")}>
+                <button onClick={() => { setMode('compress'); }} className={clsx("pb-2 px-4 font-bold flex items-center gap-2", mode === 'compress' ? "text-primary-500 border-b-2 border-primary-500" : "text-gray-500")}>
                     <Archive size={20} /> Compress
                 </button>
-                <button onClick={() => { setMode('extract'); setFiles([]); }} className={clsx("pb-2 px-4 font-bold flex items-center gap-2", mode === 'extract' ? "text-primary-500 border-b-2 border-primary-500" : "text-gray-500")}>
+                <button onClick={() => { setMode('extract'); }} className={clsx("pb-2 px-4 font-bold flex items-center gap-2", mode === 'extract' ? "text-primary-500 border-b-2 border-primary-500" : "text-gray-500")}>
                     <FileArchive size={20} /> Extract
                 </button>
             </div>
@@ -94,9 +114,36 @@ export default function ArchiverView() {
                 <div className="flex flex-col items-center text-gray-400">
                     {mode === 'compress' ? <Archive size={48} className="mb-2" /> : <FileArchive size={48} className="mb-2" />}
                     <p className="font-bold text-lg">{files.length > 0 ? `${files.length} file(s) selected` : (mode === 'compress' ? 'Drop files to Zip' : 'Drop Zip to Extract')}</p>
-                    {files.length > 0 && <p className="text-sm text-primary-400 mt-2">{files[0].name}</p>}
+                    {mode === 'compress' && files.length > 0 && <p className="text-sm text-primary-400 mt-2">{files.map(f => f.name).slice(0,3).join(', ')}{files.length > 3 ? `, +${files.length-3} more` : ''}</p>}
+                    {mode === 'extract' && files.length > 0 && <p className="text-sm text-primary-400 mt-2">{files[0].name}</p>}
                 </div>
             </div>
+
+            {/* Compress: selected files list with remove and reset */}
+            {mode === 'compress' && files.length > 0 && (
+                <div className="bg-surface border border-gray-700 rounded-xl overflow-hidden animate-fade-in-up">
+                    <div className="bg-gray-900 p-3 border-b border-gray-700 text-sm text-gray-400 font-bold flex justify-between items-center">
+                        <span>Selected Files ({files.length})</span>
+                        <div className="flex items-center gap-2">
+                            <button onClick={() => setFiles([])} className="text-xs bg-gray-800 px-3 py-1 rounded hover:bg-gray-700">Reset List</button>
+                        </div>
+                    </div>
+                    <div className="max-h-64 overflow-y-auto divide-y divide-gray-800">
+                        {files.map((f: File, i: number) => (
+                            <div key={`${f.name}-${f.size}-${i}`} className="p-3 flex items-center justify-between hover:bg-gray-800/50 transition">
+                                <div className="flex items-center gap-3 overflow-hidden">
+                                    <FileIcon size={16} className="text-gray-500" />
+                                    <span className="text-sm text-gray-200 truncate" title={f.name}>{f.name}</span>
+                                    <span className="text-xs text-gray-600">{(f.size / 1024 / 1024).toFixed(2)} MB</span>
+                                </div>
+                                <button onClick={() => setFiles(prev => prev.filter((_, idx) => idx !== i))} className="p-2 bg-gray-800 hover:bg-red-600 hover:text-black rounded text-gray-400 transition" aria-label={`Remove ${f.name}`}>
+                                    <X size={14} />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Extract Settings */}
             {mode === 'extract' && isEncrypted && (
@@ -118,6 +165,14 @@ export default function ArchiverView() {
             {files.length > 0 && !isArchiving && (
                 <button onClick={handleExecute} className="w-full bg-primary-500 text-black font-bold py-4 rounded-xl hover:bg-primary-400 shadow-lg transition">
                     {mode === 'compress' ? 'Create Archive' : (isEncrypted ? 'Decrypt & Extract' : 'Extract Files')}
+                </button>
+            )}
+
+            {mode === 'compress' && zipUrl && !isArchiving && (
+                <button onClick={handleDownloadArchive} className="w-full bg-emerald-500 text-black font-bold py-3 rounded-xl hover:bg-emerald-400 shadow-lg transition">
+                    <div className="flex items-center justify-center gap-2">
+                        <Download size={18} /> Download {zipName || 'archive.zip'}
+                    </div>
                 </button>
             )}
 
