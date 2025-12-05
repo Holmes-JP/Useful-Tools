@@ -1,6 +1,9 @@
 import { Fingerprint, Globe2, Hash, KeyRound, Lock, Router, ShieldCheck, Sparkles } from "lucide-react";
 import GeneratorsPanel from "./Panels/GeneratorsPanel";
 import HashAnalyzerPanel from "./Panels/HashAnalyzerPanel";
+import JWTAnalyzerPanel from "./Panels/JWTAnalyzerPanel";
+import HashIdentifierPanel from "./Panels/HashIdentifierPanel";
+import CertificateAnalyzerPanel from "./Panels/CertificateAnalyzerPanel";
 import NetworkUtilsPanel from "./Panels/NetworkUtilsPanel";
 import WebToolsPanel from "./Panels/WebToolsPanel";
 
@@ -8,8 +11,8 @@ export type ChildTool = {
     slug: string;
     label: string;
     description: string;
-    icon: JSX.Element;
-    element: JSX.Element;
+    icon: React.ReactNode;
+    element: React.ReactNode;
 };
 
 export type ToolCard = {
@@ -17,7 +20,7 @@ export type ToolCard = {
     label: string;
     description: string;
     color: string;
-    icon: JSX.Element;
+    icon: React.ReactNode;
     children: ChildTool[];
 };
 
@@ -38,11 +41,14 @@ export const toolCards: Record<string, ToolCard> = {
     analyzers: {
         slug: "analyzers",
         label: "Analyzers",
-        description: "Dictionary attack and hash analysis",
+        description: "Hash analysis and security helpers",
         color: "bg-rose-400 text-black hover:bg-rose-300",
         icon: <ShieldCheck size={18} />,
         children: [
             { slug: "hashanalyzer", label: "Hash Analyzer", description: "Dictionary attack for hashes", icon: <ShieldCheck size={16} />, element: <HashAnalyzerPanel /> },
+            { slug: "jwt", label: "JWT Analyzer", description: "Decode, inspect claims, verify signature", icon: <ShieldCheck size={16} />, element: <JWTAnalyzerPanel /> },
+            { slug: "hash-id", label: "Hash Identifier", description: "Guess hash algorithms from format", icon: <Fingerprint size={16} />, element: <HashIdentifierPanel /> },
+            { slug: "cert", label: "Certificate Analyzer", description: "Parse PEM/DER, view validity & SAN", icon: <Hash size={16} />, element: <CertificateAnalyzerPanel /> },
         ],
     },
     "web-tools": {

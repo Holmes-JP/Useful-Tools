@@ -13,25 +13,25 @@
     "@ffmpeg/ffmpeg": "^0.12.15",
     "@ffmpeg/util": "^0.12.2",
     "@fontsource/inter": "^5.2.8",
+    "@peculiar/x509": "^1.14.2",
     "@types/js-yaml": "^4.0.9",
     "@types/uuid": "^10.0.0",
     "@zip.js/zip.js": "^2.8.11",
     "browser-image-compression": "^2.0.2",
     "clsx": "^2.1.1",
+    "crypto-js": "^4.1.1",
     "date-fns": "^4.1.0",
     "diff": "^8.0.2",
     "fflate": "^0.8.2",
     "ip-subnet-calculator": "^2.0.1",
+    "japanese-holidays": "^1.0.10",
     "js-yaml": "^4.1.0",
     "jwt-decode": "^3.1.2",
-    "crypto-js": "^4.1.1",
-    "uuid": "^9.0.0",
-    "qrcode": "^1.5.1",
-    "japanese-holidays": "^1.0.10",
     "lucide-react": "^0.460.0",
     "mathjs": "^14.0.0",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^3.11.174",
+    "qrcode": "^1.5.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-dropzone": "^14.3.5",
@@ -44,6 +44,7 @@
     "remark-gfm": "^4.0.1",
     "tesseract.js": "^5.1.1",
     "ua-parser-js": "^2.0.6",
+    "uuid": "^9.0.0",
     "wavesurfer.js": "^7.8.11"
   },
   "devDependencies": {
@@ -70,4 +71,3 @@
     "vite": "^5.4.10"
   }
 }
-
