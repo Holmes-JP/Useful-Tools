@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
     Wand2, ShieldCheck, MessageSquarePlus, Menu, X,
-    Clock, Calculator, Cast, Image as ImageIcon, Network,
+    Clock, Calculator, Image as ImageIcon, Network,
     Archive, FileText, Video, Music, Monitor, Settings, Sparkles, Globe2
 } from 'lucide-react';
 import clsx from 'clsx';
@@ -14,7 +14,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     const navItems = [
         { path: '/', label: 'Universal Converter', icon: Wand2 },
         { path: '/video', label: 'Video Studio', icon: Video },
-        { path: '/audio', label: 'Audio Lab', icon: Music },
+        { path: '/audioeditor', label: 'Audio Editor', icon: Music },
         { path: '/editor', label: 'Image Editor', icon: ImageIcon },
         { path: '/file', label: 'File Master', icon: Archive },
         { path: '/text', label: 'Text & Code', icon: FileText },
@@ -25,7 +25,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { path: '/web-tools', label: 'Web Tools', icon: Globe2 },
         { path: '/network-tools', label: 'Network Tools', icon: Network },
         { path: '/sys', label: 'System Info', icon: Monitor },
-        { path: '/streamer', label: 'Streamer Tools', icon: Cast },
         { path: '/privacy', label: 'Privacy & Security', icon: ShieldCheck },
         { path: '/feedback', label: 'Request & Feedback', icon: MessageSquarePlus },
         { path: '/settings', label: 'Global Settings', icon: Settings },

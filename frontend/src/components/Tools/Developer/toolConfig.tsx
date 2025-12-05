@@ -1,4 +1,4 @@
-import { Fingerprint, Globe2, Hash, KeyRound, Lock, Router, Shield, ShieldCheck, Sparkles, FileSearch, TextSearch, Code, Link as LinkIcon, QrCode, FileText, Search } from "lucide-react";
+import { Fingerprint, Globe2, Hash, KeyRound, Lock, Router, Shield, ShieldCheck, Sparkles, FileSearch, TextSearch, Code, Link as LinkIcon, QrCode, FileText, Search, Wifi } from "lucide-react";
 import GeneratorsPanel from "./Panels/GeneratorsPanel";
 import HashAnalyzerPanel from "./Panels/HashAnalyzerPanel";
 import JWTAnalyzerPanel from "./Panels/JWTAnalyzerPanel";
@@ -24,6 +24,7 @@ import DnsLookupPanel from "./Panels/DnsLookupPanel";
 import ReverseDnsPanel from "./Panels/ReverseDnsPanel";
 import WhoisLookupPanel from "./Panels/WhoisLookupPanel";
 import GeoLookupPanel from "./Panels/GeoLookupPanel";
+import NetworkSpeedTestPanel from "./Panels/NetworkSpeedTestPanel";
 
 export type ChildTool = {
     slug: string;
@@ -106,6 +107,7 @@ export const toolCards: Record<string, ToolCard> = {
             { slug: "reverse-dns", label: "Reverse DNS", description: "PTR lookup and forward confirmation", icon: <Search size={16} />, element: <ReverseDnsPanel /> },
             { slug: "whois", label: "WHOIS Lookup", description: "Registrar, dates, status, nameservers", icon: <Search size={16} />, element: <WhoisLookupPanel /> },
             { slug: "geoip", label: "IP → Geo Lookup", description: "Geo, ISP/ASN, PTR from IP/domain", icon: <Globe2 size={16} />, element: <GeoLookupPanel /> },
+            { slug: "speedtest", label: "Network Speed Test", description: "Download/Upload/Ping/Jitter check", icon: <Wifi size={16} />, element: <NetworkSpeedTestPanel /> },
         ],
     },
 };

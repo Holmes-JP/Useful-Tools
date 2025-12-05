@@ -3,7 +3,7 @@ import Layout from './components/Layout/Layout';
 import UniversalConverter from './components/Tools/UniversalConverter';
 import DocumentStudio from './components/Tools/Document/DocumentStudio'; // 追加
 import VideoTools from './components/Tools/Video/VideoTools';
-import AudioLab from './components/Tools/Audio/AudioLab';
+import AudioEditor from './components/Tools/Audio/AudioLab';
 import FileTools from './components/Tools/File/FileTools';
 import TextTools from './components/Tools/Text/TextTools';
 import TimeTools from './components/Tools/Time/TimeTools';
@@ -17,20 +17,7 @@ import Feedback from './components/Pages/Feedback';
 import GlobalSettings from './components/Pages/GlobalSettings';
 
 // Streamer Tools
-import StreamerDashboard from './components/Tools/Streamer/StreamerDashboard';
-import ObsClock from './components/Tools/Streamer/Views/ObsClock';
-import ObsCounter from './components/Tools/Streamer/Views/ObsCounter';
-import ObsDice from './components/Tools/Streamer/Views/ObsDice';
-import ObsRng from './components/Tools/Streamer/Views/ObsRng';
-import ObsRoulette from './components/Tools/Streamer/Views/ObsRoulette';
-import ObsTicker from './components/Tools/Streamer/Views/ObsTicker';
-import ObsText from './components/Tools/Streamer/Views/ObsText';
-import ObsTimer from './components/Tools/Streamer/Views/ObsTimer';
-import ObsStopwatch from './components/Tools/Streamer/Views/ObsStopwatch';
-import ObsSlideshow from './components/Tools/Streamer/Views/ObsSlideshow';
-import ObsBingo from './components/Tools/Streamer/Views/ObsBingo';
-import ObsConfetti from './components/Tools/Streamer/Views/ObsConfetti';
-import ObsChart from './components/Tools/Streamer/Views/ObsChart';
+// Streamer Tools (removed)
 
 function App() {
   return (
@@ -42,7 +29,8 @@ function App() {
               <Route path="/" element={<UniversalConverter />} />
               <Route path="/doc" element={<DocumentStudio />} />
               <Route path="/video" element={<VideoTools />} />
-              <Route path="/audio" element={<AudioLab />} />
+              <Route path="/audioeditor" element={<AudioEditor />} />
+              <Route path="/audio" element={<Navigate to="/audioeditor" replace />} />
               <Route path="/file" element={<FileTools />} />
               <Route path="/text" element={<TextTools />} />
               <Route path="/time" element={<TimeTools />} />
@@ -53,7 +41,7 @@ function App() {
               <Route path="/web-tools/*" element={<ToolSectionPage tool={toolCards['web-tools']} basePath="/web-tools" />} />
               <Route path="/network-tools/*" element={<ToolSectionPage tool={toolCards['network-tools']} basePath="/network-tools" />} />
               <Route path="/dev/*" element={<Navigate to="/generators" replace />} />
-              <Route path="/streamer" element={<StreamerDashboard />} />
+              {/* Streamer route removed */}
               <Route path="/sys" element={<SystemInfo />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/feedback" element={<Feedback />} />
@@ -62,20 +50,7 @@ function App() {
           </Layout>
         } />
 
-        {/* OBS Views */}
-        <Route path="/streamer/view/clock" element={<ObsClock />} />
-        <Route path="/streamer/view/counter" element={<ObsCounter />} />
-        <Route path="/streamer/view/dice" element={<ObsDice />} />
-        <Route path="/streamer/view/rng" element={<ObsRng />} />
-        <Route path="/streamer/view/roulette" element={<ObsRoulette />} />
-        <Route path="/streamer/view/ticker" element={<ObsTicker />} />
-        <Route path="/streamer/view/text" element={<ObsText />} />
-        <Route path="/streamer/view/timer" element={<ObsTimer />} />
-        <Route path="/streamer/view/stopwatch" element={<ObsStopwatch />} />
-        <Route path="/streamer/view/slideshow" element={<ObsSlideshow />} />
-        <Route path="/streamer/view/bingo" element={<ObsBingo />} />
-        <Route path="/streamer/view/confetti" element={<ObsConfetti />} />
-        <Route path="/streamer/view/chart" element={<ObsChart />} />
+        {/* Streamer OBS views removed */}
       </Routes>
     </Router>
   );
