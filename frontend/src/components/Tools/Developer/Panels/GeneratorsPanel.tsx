@@ -4,11 +4,17 @@ import CryptoJS from 'crypto-js';
 
 type RsaAlgorithm = 'RSA-PSS' | 'RSA-OAEP';
 type KeyFormat = 'PEM' | 'JWK';
-type GeneratorView = 'uuid' | 'password' | 'hash' | 'keys';
+type GeneratorView = 'uuid' | 'password' | 'hash' | 'keys' | 'crypto';
 type HashAlgorithm = 'SHA-256' | 'SHA-1' | 'MD5' | 'SHA-384' | 'SHA-512';
 type HashMode = 'text' | 'file';
+type AesVariant = 'AES-128' | 'AES-192' | 'AES-256';
+type AesMode = 'ECB' | 'CBC' | 'GCM';
+type AesDirection = 'encrypt' | 'decrypt';
+type Encoding = 'utf8' | 'hex' | 'base64';
+type HmacAlgo = 'SHA-1' | 'SHA-256' | 'SHA-384' | 'SHA-512';
 
 export default function GeneratorsPanel({ view }: { view?: GeneratorView }) {
+    const [cryptoTab, setCryptoTab] = useState<'aes' | 'hmac'>('aes');
     const [uuidCount, setUuidCount] = useState(3);
     const [uuidResults, setUuidResults] = useState<string[]>([]);
 
@@ -40,6 +46,39 @@ export default function GeneratorsPanel({ view }: { view?: GeneratorView }) {
     const [hashUppercase, setHashUppercase] = useState(false);
     const [hashLoading, setHashLoading] = useState(false);
     const [hashError, setHashError] = useState<string | null>(null);
+
+    const [aesVariant, setAesVariant] = useState<AesVariant>('AES-256');
+    const [aesMode, setAesMode] = useState<AesMode>('CBC');
+    const [aesDirection, setAesDirection] = useState<AesDirection>('encrypt');
+    const [aesKey, setAesKey] = useState('');
+    const [aesKeyEnc, setAesKeyEnc] = useState<Encoding>('hex');
+    const [aesIv, setAesIv] = useState('');
+    const [aesIvEnc, setAesIvEnc] = useState<Encoding>('hex');
+    const [aesNonce, setAesNonce] = useState('');
+    const [aesNonceEnc, setAesNonceEnc] = useState<Encoding>('hex');
+    const [aesAad, setAesAad] = useState('');
+    const [aesAadEnc, setAesAadEnc] = useState<Encoding>('utf8');
+    const [aesTag, setAesTag] = useState('');
+    const [aesTagEnc, setAesTagEnc] = useState<Encoding>('hex');
+    const [aesInput, setAesInput] = useState('');
+    const [aesInputEnc, setAesInputEnc] = useState<Encoding>('utf8');
+    const [aesOutput, setAesOutput] = useState('');
+    const [aesOutputEnc, setAesOutputEnc] = useState<'hex' | 'base64' | 'utf8'>('base64');
+    const [aesPadding, setAesPadding] = useState<'pkcs7' | 'none'>('pkcs7');
+    const [aesError, setAesError] = useState<string | null>(null);
+
+    const [hmacAlgo, setHmacAlgo] = useState<HmacAlgo>('SHA-256');
+    const [hmacMode, setHmacMode] = useState<'generate' | 'verify'>('generate');
+    const [hmacMessage, setHmacMessage] = useState('');
+    const [hmacMsgEnc, setHmacMsgEnc] = useState<Encoding>('utf8');
+    const [hmacKey, setHmacKey] = useState('');
+    const [hmacKeyEnc, setHmacKeyEnc] = useState<Encoding>('utf8');
+    const [hmacResultHex, setHmacResultHex] = useState('');
+    const [hmacResultB64, setHmacResultB64] = useState('');
+    const [hmacExpected, setHmacExpected] = useState('');
+    const [hmacExpectedEnc, setHmacExpectedEnc] = useState<'hex' | 'base64'>('hex');
+    const [hmacVerify, setHmacVerify] = useState<'idle' | 'ok' | 'ng'>('idle');
+    const [hmacError, setHmacError] = useState<string | null>(null);
 
     const passwordPools = useMemo(() => ({
         lower: 'abcdefghijklmnopqrstuvwxyz',
@@ -149,6 +188,42 @@ export default function GeneratorsPanel({ view }: { view?: GeneratorView }) {
         return CryptoJS.lib.WordArray.create(new Uint8Array(buffer) as any);
     }
 
+    function encodeBytes(bytes: Uint8Array, enc: Encoding | 'hex' | 'base64') {
+        if (enc === 'hex') return arrayBufferToHex(bytes);
+        if (enc === 'base64') return arrayBufferToBase64(bytes);
+        return new TextDecoder().decode(bytes);
+    }
+
+    function decodeInput(str: string, enc: Encoding | 'hex' | 'base64'): Uint8Array | null {
+        try {
+            if (enc === 'utf8') {
+                return new TextEncoder().encode(str);
+            }
+            if (enc === 'hex') {
+                const cleaned = str.trim();
+                if (!/^[0-9a-fA-F]*$/.test(cleaned) || cleaned.length % 2 !== 0) throw new Error('hex');
+                const bytes = new Uint8Array(cleaned.length / 2);
+                for (let i = 0; i < cleaned.length; i += 2) bytes[i / 2] = parseInt(cleaned.slice(i, i + 2), 16);
+                return bytes;
+            }
+            if (enc === 'base64') {
+                const bin = atob(str.trim());
+                const bytes = new Uint8Array(bin.length);
+                for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                return bytes;
+            }
+            return null;
+        } catch {
+            return null;
+        }
+    }
+
+    function randomBytes(length: number) {
+        const arr = new Uint8Array(length);
+        crypto.getRandomValues(arr);
+        return arr;
+    }
+
     async function computeHash(buffer: ArrayBuffer, algo: HashAlgorithm) {
         if (algo === 'MD5') {
             const wordArray = bufferToWordArray(buffer);
@@ -243,10 +318,186 @@ export default function GeneratorsPanel({ view }: { view?: GeneratorView }) {
         }
     }
 
+    function handleRandomKey() {
+        const bytes = aesVariant === 'AES-128' ? 16 : aesVariant === 'AES-192' ? 24 : 32;
+        const key = randomBytes(bytes);
+        setAesKey(encodeBytes(key, aesKeyEnc));
+    }
+
+    function handleRandomIv() {
+        const iv = randomBytes(16);
+        setAesIv(encodeBytes(iv, aesIvEnc));
+    }
+
+    function handleRandomNonce() {
+        const nonce = randomBytes(12);
+        setAesNonce(encodeBytes(nonce, aesNonceEnc));
+    }
+
+    function validateAesKey(): Uint8Array | null {
+        const required = aesVariant === 'AES-128' ? 16 : aesVariant === 'AES-192' ? 24 : 32;
+        const keyBytes = decodeInput(aesKey, aesKeyEnc);
+        if (!keyBytes || keyBytes.length !== required) {
+            setAesError(`AES-${required * 8} requires a ${required}-byte key (current: ${keyBytes ? keyBytes.length : 0} bytes).`);
+            return null;
+        }
+        return keyBytes;
+    }
+
+    function getIvOrNonce(): Uint8Array | null {
+        if (aesMode === 'ECB') return new Uint8Array();
+        if (aesMode === 'CBC') {
+            const ivBytes = decodeInput(aesIv, aesIvEnc);
+            if (!ivBytes || ivBytes.length !== 16) {
+                setAesError('CBC requires a 16-byte IV.');
+                return null;
+            }
+            return ivBytes;
+        }
+        const nonceBytes = decodeInput(aesNonce, aesNonceEnc);
+        if (!nonceBytes || nonceBytes.length < 8) {
+            setAesError('GCM requires a nonce (12 bytes recommended).');
+            return null;
+        }
+        return nonceBytes;
+    }
+
+    async function handleAes() {
+        setAesError(null);
+        setAesOutput('');
+        if (aesMode !== 'GCM' && aesTag) {
+            setAesTag('');
+        }
+        try {
+            const keyBytes = validateAesKey();
+            if (!keyBytes) return;
+            const dataBytes = decodeInput(aesInput, aesInputEnc);
+            if (!dataBytes) {
+                setAesError('Input data is empty or could not be decoded. Check the encoding.');
+                return;
+            }
+
+            if ((aesMode === 'ECB' || aesMode === 'CBC') && aesPadding === 'none' && dataBytes.length % 16 !== 0) {
+                setAesError('No padding selected: data length must be a multiple of 16 bytes.');
+                return;
+            }
+            if (aesDirection === 'decrypt' && (aesMode === 'ECB' || aesMode === 'CBC') && dataBytes.length % 16 !== 0) {
+                setAesError('Ciphertext length must be a multiple of 16 bytes for ECB/CBC.');
+                return;
+            }
+
+            const iv = getIvOrNonce();
+            if (iv === null) return;
+
+            if (aesMode === 'GCM') {
+                const algo = { name: 'AES-GCM', iv, additionalData: aesAad ? decodeInput(aesAad, aesAadEnc) || undefined : undefined, tagLength: 128 } as AesGcmParams;
+                const key = await crypto.subtle.importKey('raw', keyBytes, { name: 'AES-GCM', length: keyBytes.length * 8 }, false, [aesDirection === 'encrypt' ? 'encrypt' : 'decrypt']);
+
+                if (aesDirection === 'encrypt') {
+                    const cipherBuf = await crypto.subtle.encrypt(algo, key, dataBytes);
+                    const outBytes = new Uint8Array(cipherBuf);
+                    const tagBytes = outBytes.slice(outBytes.length - 16);
+                    const ctBytes = outBytes.slice(0, outBytes.length - 16);
+                    const encForCipher = aesOutputEnc === 'utf8' ? 'base64' : aesOutputEnc;
+                    setAesOutput(encodeBytes(ctBytes, encForCipher));
+                    setAesTag(encodeBytes(tagBytes, aesTagEnc));
+                } else {
+                    const tagBytes = decodeInput(aesTag, aesTagEnc);
+                    if (!tagBytes) {
+                        setAesError('Auth Tag is required for GCM decryption.');
+                        return;
+                    }
+                    const combined = new Uint8Array(dataBytes.length + tagBytes.length);
+                    combined.set(dataBytes, 0);
+                    combined.set(tagBytes, dataBytes.length);
+                    const plainBuf = await crypto.subtle.decrypt(algo, key, combined);
+                    setAesOutput(encodeBytes(new Uint8Array(plainBuf), aesOutputEnc));
+                }
+                return;
+            }
+
+            const keyWord = aesKeyEnc === 'hex'
+                ? CryptoJS.enc.Hex.parse(aesKey)
+                : aesKeyEnc === 'base64'
+                    ? CryptoJS.enc.Base64.parse(aesKey)
+                    : CryptoJS.enc.Utf8.parse(aesKey);
+
+            const dataWord = CryptoJS.lib.WordArray.create(dataBytes as any);
+            const cfg: any = {
+                mode: aesMode === 'ECB' ? CryptoJS.mode.ECB : CryptoJS.mode.CBC,
+                padding: aesPadding === 'none' ? CryptoJS.pad.NoPadding : CryptoJS.pad.Pkcs7,
+            };
+            if (aesMode === 'CBC') {
+                cfg.iv = aesIvEnc === 'hex' ? CryptoJS.enc.Hex.parse(aesIv) : aesIvEnc === 'base64' ? CryptoJS.enc.Base64.parse(aesIv) : CryptoJS.enc.Utf8.parse(aesIv);
+            }
+
+            if (aesDirection === 'encrypt') {
+                const out = CryptoJS.AES.encrypt(dataWord, keyWord, cfg);
+                const outBytes = out.ciphertext;
+                const encForCipher = aesOutputEnc === 'utf8' ? 'base64' : aesOutputEnc;
+                const output = encForCipher === 'hex' ? outBytes.toString(CryptoJS.enc.Hex) : outBytes.toString(CryptoJS.enc.Base64);
+                setAesOutput(output);
+            } else {
+                const decrypted = CryptoJS.AES.decrypt({ ciphertext: dataWord } as any, keyWord, cfg);
+                const output =
+                    aesOutputEnc === 'hex'
+                        ? decrypted.toString(CryptoJS.enc.Hex)
+                        : aesOutputEnc === 'base64'
+                            ? decrypted.toString(CryptoJS.enc.Base64)
+                            : decrypted.toString(CryptoJS.enc.Utf8);
+                setAesOutput(output);
+            }
+        } catch (e: any) {
+            setAesError(e?.message || 'AES operation failed.');
+        }
+    }
+
+    async function handleHmac() {
+        setHmacError(null);
+        setHmacVerify('idle');
+        setHmacResultHex('');
+        setHmacResultB64('');
+        const msg = decodeInput(hmacMessage, hmacMsgEnc);
+        const keyBytes = decodeInput(hmacKey, hmacKeyEnc);
+        if (!msg || !keyBytes) {
+            setHmacError('Message or Key could not be decoded. Check encoding.');
+            return;
+        }
+        const algo = hmacAlgo as 'SHA-1' | 'SHA-256' | 'SHA-384' | 'SHA-512';
+        try {
+            const key = await crypto.subtle.importKey('raw', keyBytes, { name: 'HMAC', hash: algo }, false, ['sign']);
+            const sig = new Uint8Array(await crypto.subtle.sign('HMAC', key, msg));
+            const hex = encodeBytes(sig, 'hex');
+            const b64 = encodeBytes(sig, 'base64');
+            setHmacResultHex(hex);
+            setHmacResultB64(b64);
+            if (hmacMode === 'verify') {
+                const expected = decodeInput(hmacExpected, hmacExpectedEnc);
+                if (!expected) {
+                    setHmacError('Expected HMAC is missing or invalid for the chosen encoding.');
+                    return;
+                }
+                const matches = expected.length === sig.length && expected.every((v, i) => v === sig[i]);
+                setHmacVerify(matches ? 'ok' : 'ng');
+            }
+        } catch (e: any) {
+            setHmacError(e?.message || 'HMAC calculation failed.');
+        }
+    }
+
     const showUUID = !view || view === 'uuid';
     const showPassword = !view || view === 'password';
     const showHash = !view || view === 'hash';
     const showKeys = !view || view === 'keys';
+    const showCrypto = !view || view === 'crypto';
+
+    const aesRequiredKeyBytes = aesVariant === 'AES-128' ? 16 : aesVariant === 'AES-192' ? 24 : 32;
+    const aesDataLabel = aesDirection === 'encrypt' ? 'Plaintext' : 'Ciphertext';
+    const aesOutputLabel = aesDirection === 'encrypt' ? 'Ciphertext' : 'Plaintext';
+    const aesDataEncOptions: Encoding[] = aesDirection === 'encrypt' ? ['utf8', 'hex', 'base64'] : ['hex', 'base64'];
+    const aesOutputEncOptions: Array<'utf8' | 'hex' | 'base64'> = aesDirection === 'encrypt' ? ['hex', 'base64'] : ['utf8', 'hex', 'base64'];
+    const isCbc = aesMode === 'CBC';
+    const isGcm = aesMode === 'GCM';
 
     return (
         <div className="space-y-6">
@@ -490,6 +741,534 @@ export default function GeneratorsPanel({ view }: { view?: GeneratorView }) {
                             placeholder="Hash will appear here"
                         />
                     </div>
+                </section>
+            )}
+
+            {showCrypto && (
+                <section className="bg-gray-900/50 border border-gray-800 rounded-xl p-4 space-y-4">
+                    <div className="flex items-center justify-between gap-3">
+                        <h4 className="text-xl font-semibold text-white">AES / HMAC</h4>
+                        <div className="text-right">
+                            <p className="text-xs text-gray-400">Encrypt/decrypt AES and generate/verify HMAC locally.</p>
+                            {cryptoTab === 'aes' && aesError && <p className="text-xs text-red-400">{aesError}</p>}
+                            {cryptoTab === 'hmac' && hmacError && <p className="text-xs text-red-400">{hmacError}</p>}
+                        </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                        <button
+                            className={`px-3 py-2 rounded-lg text-sm font-semibold border ${cryptoTab === 'aes' ? 'bg-primary-500 text-black border-primary-500' : 'bg-gray-800 text-gray-200 border-gray-700 hover:border-primary-500/60'}`}
+                            onClick={() => setCryptoTab('aes')}
+                        >
+                            AES
+                        </button>
+                        <button
+                            className={`px-3 py-2 rounded-lg text-sm font-semibold border ${cryptoTab === 'hmac' ? 'bg-primary-500 text-black border-primary-500' : 'bg-gray-800 text-gray-200 border-gray-700 hover:border-primary-500/60'}`}
+                            onClick={() => setCryptoTab('hmac')}
+                        >
+                            HMAC
+                        </button>
+                    </div>
+
+                    {cryptoTab === 'aes' ? (
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <label className="flex flex-col gap-1 text-sm text-gray-300">
+                                    AES Variant
+                                    <select
+                                        className="bg-gray-800 p-2 rounded text-white"
+                                        value={aesVariant}
+                                        onChange={e => {
+                                            setAesVariant(e.target.value as AesVariant);
+                                            setAesError(null);
+                                        }}
+                                    >
+                                        <option value="AES-128">AES-128</option>
+                                        <option value="AES-192">AES-192</option>
+                                        <option value="AES-256">AES-256</option>
+                                    </select>
+                                    <span className="text-xs text-gray-400">Requires {aesRequiredKeyBytes} bytes</span>
+                                </label>
+                                <label className="flex flex-col gap-1 text-sm text-gray-300">
+                                    Mode
+                                    <select
+                                        className="bg-gray-800 p-2 rounded text-white"
+                                        value={aesMode}
+                                        onChange={e => {
+                                            const mode = e.target.value as AesMode;
+                                            setAesMode(mode);
+                                            setAesError(null);
+                                            setAesOutput('');
+                                            setAesTag('');
+                                        }}
+                                    >
+                                        <option value="ECB">ECB</option>
+                                        <option value="CBC">CBC</option>
+                                        <option value="GCM">GCM</option>
+                                    </select>
+                                </label>
+                                <div className="flex flex-col gap-1 text-sm text-gray-300">
+                                    Direction
+                                    <div className="flex items-center gap-4 bg-gray-800 p-2 rounded">
+                                        <label className="flex items-center gap-2">
+                                            <input
+                                                type="radio"
+                                                name="aes-direction"
+                                                value="encrypt"
+                                                checked={aesDirection === 'encrypt'}
+                                                onChange={() => handleAesDirectionChange('encrypt')}
+                                            />
+                                            Encrypt
+                                        </label>
+                                        <label className="flex items-center gap-2">
+                                            <input
+                                                type="radio"
+                                                name="aes-direction"
+                                                value="decrypt"
+                                                checked={aesDirection === 'decrypt'}
+                                                onChange={() => handleAesDirectionChange('decrypt')}
+                                            />
+                                            Decrypt
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div className="flex flex-col gap-2 text-sm text-gray-300">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <span>Key</span>
+                                        <div className="flex items-center gap-2">
+                                            <select
+                                                className="bg-gray-800 p-2 rounded text-white text-xs"
+                                                value={aesKeyEnc}
+                                                onChange={e => setAesKeyEnc(e.target.value as Encoding)}
+                                            >
+                                                <option value="utf8">UTF-8</option>
+                                                <option value="hex">Hex</option>
+                                                <option value="base64">Base64</option>
+                                            </select>
+                                            <button
+                                                className="px-2 py-1 bg-primary-500 text-black rounded text-xs font-semibold"
+                                                onClick={handleRandomKey}
+                                            >
+                                                Random
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <input
+                                        className="w-full bg-gray-900 border border-gray-800 rounded p-2 text-gray-100"
+                                        value={aesKey}
+                                        onChange={e => setAesKey(e.target.value)}
+                                        placeholder="Key value"
+                                    />
+                                    <span className="text-xs text-gray-400">Length: {aesRequiredKeyBytes} bytes ({aesRequiredKeyBytes * 8}-bit)</span>
+                                </div>
+
+                                {isCbc && (
+                                    <div className="flex flex-col gap-2 text-sm text-gray-300">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span>IV (16 bytes)</span>
+                                            <div className="flex items-center gap-2">
+                                                <select
+                                                    className="bg-gray-800 p-2 rounded text-white text-xs"
+                                                    value={aesIvEnc}
+                                                    onChange={e => setAesIvEnc(e.target.value as Encoding)}
+                                                >
+                                                    <option value="hex">Hex</option>
+                                                    <option value="base64">Base64</option>
+                                                    <option value="utf8">UTF-8</option>
+                                                </select>
+                                                <button
+                                                    className="px-2 py-1 bg-primary-500 text-black rounded text-xs font-semibold"
+                                                    onClick={handleRandomIv}
+                                                >
+                                                    Random
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <input
+                                            className="w-full bg-gray-900 border border-gray-800 rounded p-2 text-gray-100"
+                                            value={aesIv}
+                                            onChange={e => setAesIv(e.target.value)}
+                                            placeholder="Initialization Vector"
+                                        />
+                                    </div>
+                                )}
+
+                                {isGcm && (
+                                    <div className="flex flex-col gap-2 text-sm text-gray-300">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span>Nonce (12 bytes)</span>
+                                            <div className="flex items-center gap-2">
+                                                <select
+                                                    className="bg-gray-800 p-2 rounded text-white text-xs"
+                                                    value={aesNonceEnc}
+                                                    onChange={e => setAesNonceEnc(e.target.value as Encoding)}
+                                                >
+                                                    <option value="hex">Hex</option>
+                                                    <option value="base64">Base64</option>
+                                                </select>
+                                                <button
+                                                    className="px-2 py-1 bg-primary-500 text-black rounded text-xs font-semibold"
+                                                    onClick={handleRandomNonce}
+                                                >
+                                                    Random
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <input
+                                            className="w-full bg-gray-900 border border-gray-800 rounded p-2 text-gray-100"
+                                            value={aesNonce}
+                                            onChange={e => setAesNonce(e.target.value)}
+                                            placeholder="Recommended 12 bytes"
+                                        />
+                                    </div>
+                                )}
+
+                                {(isCbc || aesMode === 'ECB') && (
+                                    <label className="flex flex-col gap-1 text-sm text-gray-300">
+                                        Padding (ECB/CBC)
+                                        <select
+                                            className="bg-gray-800 p-2 rounded text-white"
+                                            value={aesPadding}
+                                            onChange={e => setAesPadding(e.target.value as 'pkcs7' | 'none')}
+                                        >
+                                            <option value="pkcs7">PKCS#7</option>
+                                            <option value="none">No Padding (16-byte aligned)</option>
+                                        </select>
+                                    </label>
+                                )}
+                            </div>
+
+                            {isGcm && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <div className="flex flex-col gap-2 text-sm text-gray-300">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span>AAD (optional)</span>
+                                            <select
+                                                className="bg-gray-800 p-2 rounded text-white text-xs"
+                                                value={aesAadEnc}
+                                                onChange={e => setAesAadEnc(e.target.value as Encoding)}
+                                            >
+                                                <option value="utf8">UTF-8</option>
+                                                <option value="hex">Hex</option>
+                                                <option value="base64">Base64</option>
+                                            </select>
+                                        </div>
+                                        <input
+                                            className="w-full bg-gray-900 border border-gray-800 rounded p-2 text-gray-100"
+                                            value={aesAad}
+                                            onChange={e => setAesAad(e.target.value)}
+                                            placeholder="Additional authenticated data"
+                                        />
+                                    </div>
+
+                                    {aesDirection === 'encrypt' ? (
+                                        <div className="flex flex-col gap-2 text-sm text-gray-300">
+                                            <div className="flex items-center justify-between">
+                                                <span>Auth Tag</span>
+                                                <button
+                                                    className="px-2 py-1 bg-gray-800 rounded text-gray-200 text-xs"
+                                                    disabled={!aesTag}
+                                                    onClick={() => copyText(aesTag)}
+                                                >
+                                                    Copy Tag
+                                                </button>
+                                            </div>
+                                            <input
+                                                readOnly
+                                                className="w-full bg-gray-900 border border-gray-800 rounded p-2 text-gray-100"
+                                                value={aesTag}
+                                                placeholder="Generated tag"
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col gap-2 text-sm text-gray-300">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span>Auth Tag</span>
+                                                <select
+                                                    className="bg-gray-800 p-2 rounded text-white text-xs"
+                                                    value={aesTagEnc}
+                                                    onChange={e => setAesTagEnc(e.target.value as Encoding)}
+                                                >
+                                                    <option value="hex">Hex</option>
+                                                    <option value="base64">Base64</option>
+                                                </select>
+                                            </div>
+                                            <input
+                                                className="w-full bg-gray-900 border border-gray-800 rounded p-2 text-gray-100"
+                                                value={aesTag}
+                                                onChange={e => setAesTag(e.target.value)}
+                                                placeholder="Required for GCM decrypt"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between text-sm text-gray-300">
+                                        <span>{aesDataLabel}</span>
+                                        <select
+                                            className="bg-gray-800 p-2 rounded text-white text-xs"
+                                            value={aesInputEnc}
+                                            onChange={e => setAesInputEnc(e.target.value as Encoding)}
+                                        >
+                                            {aesDataEncOptions.map(opt => (
+                                                <option key={opt} value={opt}>
+                                                    {opt.toUpperCase()}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <textarea
+                                        className="w-full bg-gray-900 border border-gray-800 rounded p-3 text-sm text-gray-100 min-h-[140px]"
+                                        value={aesInput}
+                                        onChange={e => setAesInput(e.target.value)}
+                                        placeholder={aesDirection === 'encrypt' ? 'Text to encrypt' : 'Ciphertext to decrypt'}
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between text-sm text-gray-300">
+                                        <span>{aesOutputLabel}</span>
+                                        <div className="flex items-center gap-2">
+                                            <select
+                                                className="bg-gray-800 p-2 rounded text-white text-xs"
+                                                value={aesOutputEnc}
+                                                onChange={e => setAesOutputEnc(e.target.value as 'utf8' | 'hex' | 'base64')}
+                                            >
+                                                {aesOutputEncOptions.map(opt => (
+                                                    <option key={opt} value={opt}>
+                                                        {opt.toUpperCase()}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <button
+                                                className="px-2 py-1 bg-gray-800 rounded text-gray-200 text-xs disabled:opacity-50"
+                                                disabled={!aesOutput}
+                                                onClick={() => copyText(aesOutput)}
+                                            >
+                                                Copy
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <textarea
+                                        readOnly
+                                        className="w-full bg-gray-900 border border-gray-800 rounded p-3 text-sm text-gray-100 min-h-[140px]"
+                                        value={aesOutput}
+                                        placeholder="Result will appear here"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-3">
+                                <button
+                                    className="px-4 py-2 bg-primary-500 rounded text-black font-semibold disabled:opacity-60"
+                                    onClick={handleAes}
+                                >
+                                    {aesDirection === 'encrypt' ? 'Encrypt' : 'Decrypt'}
+                                </button>
+                                <button
+                                    className="px-3 py-2 bg-gray-800 rounded text-gray-200"
+                                    onClick={() => {
+                                        setAesInput('');
+                                        setAesOutput('');
+                                        setAesError(null);
+                                    }}
+                                >
+                                    Clear
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <label className="flex flex-col gap-1 text-sm text-gray-300">
+                                    Algorithm
+                                    <select
+                                        className="bg-gray-800 p-2 rounded text-white"
+                                        value={hmacAlgo}
+                                        onChange={e => setHmacAlgo(e.target.value as HmacAlgo)}
+                                    >
+                                        <option value="SHA-1">HMAC-SHA-1</option>
+                                        <option value="SHA-256">HMAC-SHA-256</option>
+                                        <option value="SHA-384">HMAC-SHA-384</option>
+                                        <option value="SHA-512">HMAC-SHA-512</option>
+                                    </select>
+                                </label>
+                                <div className="flex flex-col gap-1 text-sm text-gray-300">
+                                    Mode
+                                    <div className="flex items-center gap-4 bg-gray-800 p-2 rounded">
+                                        <label className="flex items-center gap-2">
+                                            <input
+                                                type="radio"
+                                                name="hmac-mode"
+                                                value="generate"
+                                                checked={hmacMode === 'generate'}
+                                                onChange={() => setHmacMode('generate')}
+                                            />
+                                            Generate
+                                        </label>
+                                        <label className="flex items-center gap-2">
+                                            <input
+                                                type="radio"
+                                                name="hmac-mode"
+                                                value="verify"
+                                                checked={hmacMode === 'verify'}
+                                                onChange={() => setHmacMode('verify')}
+                                            />
+                                            Verify
+                                        </label>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs">
+                                    {hmacVerify === 'ok' && <span className="px-3 py-1 rounded-full bg-emerald-600/80 text-black font-semibold">OK: HMAC matches</span>}
+                                    {hmacVerify === 'ng' && <span className="px-3 py-1 rounded-full bg-red-500/80 text-black font-semibold">NG: HMAC mismatch</span>}
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between text-sm text-gray-300">
+                                        <span>Message</span>
+                                        <select
+                                            className="bg-gray-800 p-2 rounded text-white text-xs"
+                                            value={hmacMsgEnc}
+                                            onChange={e => setHmacMsgEnc(e.target.value as Encoding)}
+                                        >
+                                            <option value="utf8">UTF-8</option>
+                                            <option value="hex">Hex</option>
+                                            <option value="base64">Base64</option>
+                                        </select>
+                                    </div>
+                                    <textarea
+                                        className="w-full bg-gray-900 border border-gray-800 rounded p-3 text-sm text-gray-100 min-h-[120px]"
+                                        value={hmacMessage}
+                                        onChange={e => setHmacMessage(e.target.value)}
+                                        placeholder="Message to sign"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between text-sm text-gray-300">
+                                        <span>Key</span>
+                                        <div className="flex items-center gap-2">
+                                            <select
+                                                className="bg-gray-800 p-2 rounded text-white text-xs"
+                                                value={hmacKeyEnc}
+                                                onChange={e => setHmacKeyEnc(e.target.value as Encoding)}
+                                            >
+                                                <option value="utf8">UTF-8</option>
+                                                <option value="hex">Hex</option>
+                                                <option value="base64">Base64</option>
+                                            </select>
+                                            <button
+                                                className="px-2 py-1 bg-primary-500 text-black rounded text-xs font-semibold"
+                                                onClick={() => setHmacKey(encodeBytes(randomBytes(32), hmacKeyEnc))}
+                                            >
+                                                Random
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <input
+                                        className="w-full bg-gray-900 border border-gray-800 rounded p-2 text-gray-100"
+                                        value={hmacKey}
+                                        onChange={e => setHmacKey(e.target.value)}
+                                        placeholder="Shared secret"
+                                    />
+                                </div>
+                            </div>
+
+                            {hmacMode === 'verify' && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between text-sm text-gray-300">
+                                            <span>Expected HMAC</span>
+                                            <select
+                                                className="bg-gray-800 p-2 rounded text-white text-xs"
+                                                value={hmacExpectedEnc}
+                                                onChange={e => setHmacExpectedEnc(e.target.value as 'hex' | 'base64')}
+                                            >
+                                                <option value="hex">Hex</option>
+                                                <option value="base64">Base64</option>
+                                            </select>
+                                        </div>
+                                        <input
+                                            className="w-full bg-gray-900 border border-gray-800 rounded p-2 text-gray-100"
+                                            value={hmacExpected}
+                                            onChange={e => setHmacExpected(e.target.value)}
+                                            placeholder="Value to compare"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="flex flex-wrap items-center gap-3">
+                                <button
+                                    className="px-4 py-2 bg-primary-500 rounded text-black font-semibold"
+                                    onClick={handleHmac}
+                                >
+                                    {hmacMode === 'generate' ? 'Compute HMAC' : 'Verify HMAC'}
+                                </button>
+                                <button
+                                    className="px-3 py-2 bg-gray-800 rounded text-gray-200"
+                                    onClick={() => {
+                                        setHmacMessage('');
+                                        setHmacKey('');
+                                        setHmacExpected('');
+                                        setHmacResultHex('');
+                                        setHmacResultB64('');
+                                        setHmacVerify('idle');
+                                        setHmacError(null);
+                                    }}
+                                >
+                                    Clear
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex items-center justify-between text-sm text-gray-300">
+                                        <span>HMAC (Hex)</span>
+                                        <button
+                                            className="px-2 py-1 bg-gray-800 rounded text-gray-200 text-xs disabled:opacity-50"
+                                            disabled={!hmacResultHex}
+                                            onClick={() => copyText(hmacResultHex)}
+                                        >
+                                            Copy
+                                        </button>
+                                    </div>
+                                    <textarea
+                                        readOnly
+                                        className="w-full bg-gray-900 border border-gray-800 rounded p-3 text-sm text-gray-100 min-h-[100px]"
+                                        value={hmacResultHex}
+                                        placeholder="Computed HMAC in hex"
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex items-center justify-between text-sm text-gray-300">
+                                        <span>HMAC (Base64)</span>
+                                        <button
+                                            className="px-2 py-1 bg-gray-800 rounded text-gray-200 text-xs disabled:opacity-50"
+                                            disabled={!hmacResultB64}
+                                            onClick={() => copyText(hmacResultB64)}
+                                        >
+                                            Copy
+                                        </button>
+                                    </div>
+                                    <textarea
+                                        readOnly
+                                        className="w-full bg-gray-900 border border-gray-800 rounded p-3 text-sm text-gray-100 min-h-[100px]"
+                                        value={hmacResultB64}
+                                        placeholder="Computed HMAC in base64"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </section>
             )}
 

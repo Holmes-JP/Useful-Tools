@@ -1,9 +1,14 @@
-import { Fingerprint, Globe2, Hash, KeyRound, Lock, Router, ShieldCheck, Sparkles } from "lucide-react";
+import { Fingerprint, Globe2, Hash, KeyRound, Lock, Router, Shield, ShieldCheck, Sparkles, FileSearch, TextSearch, Code, Link as LinkIcon } from "lucide-react";
 import GeneratorsPanel from "./Panels/GeneratorsPanel";
 import HashAnalyzerPanel from "./Panels/HashAnalyzerPanel";
 import JWTAnalyzerPanel from "./Panels/JWTAnalyzerPanel";
 import HashIdentifierPanel from "./Panels/HashIdentifierPanel";
 import CertificateAnalyzerPanel from "./Panels/CertificateAnalyzerPanel";
+import FileTypeAnalyzerPanel from "./Panels/FileTypeAnalyzerPanel";
+import MetadataAnalyzerPanel from "./Panels/MetadataAnalyzerPanel";
+import RegexTesterPanel from "./Panels/RegexTesterPanel";
+import JsonYamlValidatorPanel from "./Panels/JsonYamlValidatorPanel";
+import EncodingInspectorPanel from "./Panels/EncodingInspectorPanel";
 import NetworkUtilsPanel from "./Panels/NetworkUtilsPanel";
 import WebToolsPanel from "./Panels/WebToolsPanel";
 
@@ -35,6 +40,7 @@ export const toolCards: Record<string, ToolCard> = {
             { slug: "uuid", label: "UUID", description: "Generate multiple UUIDs", icon: <Fingerprint size={16} />, element: <GeneratorsPanel view="uuid" /> },
             { slug: "passwords", label: "Passwords", description: "Strong password generator", icon: <Lock size={16} />, element: <GeneratorsPanel view="password" /> },
             { slug: "hash", label: "Hash", description: "Hash text or files", icon: <Hash size={16} />, element: <GeneratorsPanel view="hash" /> },
+            { slug: "crypto", label: "AES / HMAC", description: "Encrypt/decrypt AES, generate & verify HMAC", icon: <ShieldCheck size={16} />, element: <GeneratorsPanel view="crypto" /> },
             { slug: "keys", label: "RSA Keys", description: "Generate RSA key pairs", icon: <KeyRound size={16} />, element: <GeneratorsPanel view="keys" /> },
         ],
     },
@@ -49,6 +55,11 @@ export const toolCards: Record<string, ToolCard> = {
             { slug: "jwt", label: "JWT Analyzer", description: "Decode, inspect claims, verify signature", icon: <ShieldCheck size={16} />, element: <JWTAnalyzerPanel /> },
             { slug: "hash-id", label: "Hash Identifier", description: "Guess hash algorithms from format", icon: <Fingerprint size={16} />, element: <HashIdentifierPanel /> },
             { slug: "cert", label: "Certificate Analyzer", description: "Parse PEM/DER, view validity & SAN", icon: <Hash size={16} />, element: <CertificateAnalyzerPanel /> },
+            { slug: "filetype", label: "File Type Analyzer", description: "Magic-number based file detection", icon: <Shield size={16} />, element: <FileTypeAnalyzerPanel /> },
+            { slug: "metadata", label: "Metadata Analyzer", description: "Analyze EXIF, GPS, privacy risks", icon: <FileSearch size={16} />, element: <MetadataAnalyzerPanel /> },
+            { slug: "regex", label: "Regex Tester", description: "Test and debug regular expressions", icon: <TextSearch size={16} />, element: <RegexTesterPanel /> },
+            { slug: "json-yaml", label: "JSON/YAML Validator", description: "Validate, pretty-print, convert", icon: <Code size={16} />, element: <JsonYamlValidatorPanel /> },
+            { slug: "encoding", label: "Encoding Inspector", description: "Base64 / Hex / URL detection & decode", icon: <LinkIcon size={16} />, element: <EncodingInspectorPanel /> },
         ],
     },
     "web-tools": {
