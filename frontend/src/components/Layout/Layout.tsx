@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { 
     Wand2, ShieldCheck, MessageSquarePlus, Menu, X,
     Clock, Calculator, Cast, Image as ImageIcon, Network,
-    Archive, FileText, Video, Music, Monitor, Settings
+    Archive, FileText, Video, Music, Monitor, Settings, Sparkles, Globe2
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -20,7 +20,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { path: '/text', label: 'Text & Code', icon: FileText },
         { path: '/time', label: 'Time Tools', icon: Clock },
         { path: '/calc', label: 'Calculator', icon: Calculator },
-        { path: '/dev', label: 'Dev & Network', icon: Network },
+        { path: '/generators', label: 'Generators', icon: Sparkles },
+        { path: '/analyzers', label: 'Analyzers', icon: ShieldCheck },
+        { path: '/web-tools', label: 'Web Tools', icon: Globe2 },
+        { path: '/network-tools', label: 'Network Tools', icon: Network },
         { path: '/sys', label: 'System Info', icon: Monitor },
         { path: '/streamer', label: 'Streamer Tools', icon: Cast },
         { path: '/privacy', label: 'Privacy & Security', icon: ShieldCheck },
@@ -43,7 +46,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <nav className="flex-1 p-4 space-y-1 overflow-y-auto custom-scrollbar">
                     {navItems.map((item) => {
                         const Icon = item.icon;
-                        const isActive = location.pathname === item.path;
+                        const isActive = item.path === '/'
+                            ? location.pathname === '/'
+                            : location.pathname.startsWith(item.path);
                         return (
                             <Link key={item.path} to={item.path} onClick={() => setSidebarOpen(false)} className={clsx("flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200", isActive ? "bg-primary-500/10 text-primary-400 border border-primary-500/20" : "text-gray-400 hover:text-white hover:bg-white/5")}>
                                 <Icon size={20} /><span className="font-medium">{item.label}</span>

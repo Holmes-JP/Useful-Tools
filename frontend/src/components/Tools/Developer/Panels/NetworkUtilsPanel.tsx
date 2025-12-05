@@ -1,12 +1,10 @@
 import { useState } from 'react';
-import CryptoJS from 'crypto-js';
 import QRCode from 'qrcode';
+import HashGenerator from '../../../Generators/HashGenerator/HashGenerator';
 
 export default function NetworkUtilsPanel(){
     const [cidr, setCidr] = useState('192.168.0.0/24');
     const [subnetResult, setSubnetResult] = useState<any>(null);
-    const [hashInput, setHashInput] = useState('');
-    const [hashAlgo, setHashAlgo] = useState<'MD5'|'SHA1'|'SHA256'>('MD5');
     const [hashOut, setHashOut] = useState('');
     const [qrText, setQrText] = useState('');
     const [qrDataUrl, setQrDataUrl] = useState('');
@@ -55,13 +53,7 @@ export default function NetworkUtilsPanel(){
         ].join('.');
     }
 
-    function genHash(){
-        let out='';
-        if(hashAlgo==='MD5') out = CryptoJS.MD5(hashInput).toString();
-        else if(hashAlgo==='SHA1') out = CryptoJS.SHA1(hashInput).toString();
-        else out = CryptoJS.SHA256(hashInput).toString();
-        setHashOut(out);
-    }
+    // Hash generation handled by shared HashGenerator (simple mode)
 
     async function genQr(){
         try{
@@ -86,16 +78,7 @@ export default function NetworkUtilsPanel(){
             </section>
 
             <section>
-                <h4 className="text-lg font-semibold text-white">Hash Generator (MD5 / SHA)</h4>
-                <div className="mt-2 flex gap-2">
-                    <input className="flex-1 bg-gray-800 p-2 rounded" value={hashInput} onChange={e=>setHashInput(e.target.value)} />
-                    <select className="bg-gray-800 p-2 rounded" value={hashAlgo} onChange={e=>setHashAlgo(e.target.value as any)}>
-                        <option>MD5</option>
-                        <option>SHA1</option>
-                        <option>SHA256</option>
-                    </select>
-                    <button className="px-3 py-1 bg-primary-500 rounded text-black" onClick={genHash}>Gen</button>
-                </div>
+                <HashGenerator simple simpleAlgo={['MD5','SHA1','SHA256']} onSimpleGenerate={(val) => setHashOut(val)} />
                 <input readOnly className="w-full bg-gray-900 p-2 rounded mt-2" value={hashOut} />
             </section>
 

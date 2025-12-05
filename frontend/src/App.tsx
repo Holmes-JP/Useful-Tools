@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout/Layout';
 import UniversalConverter from './components/Tools/UniversalConverter';
 import DocumentStudio from './components/Tools/Document/DocumentStudio'; // 追加
@@ -9,7 +9,8 @@ import TextTools from './components/Tools/Text/TextTools';
 import TimeTools from './components/Tools/Time/TimeTools';
 import CalculatorTools from './components/Tools/Calculator/CalculatorTools';
 import ImageEditor from './components/Tools/ImageEditor/ImageEditor';
-import DeveloperTools from './components/Tools/Developer/DeveloperTools';
+import ToolSectionPage from './components/Tools/Developer/ToolSectionPage';
+import { toolCards } from './components/Tools/Developer/toolConfig';
 import SystemInfo from './components/Tools/SystemInfo/SystemInfo';
 import Privacy from './components/Pages/Privacy';
 import Feedback from './components/Pages/Feedback';
@@ -47,7 +48,11 @@ function App() {
               <Route path="/time" element={<TimeTools />} />
               <Route path="/calc" element={<CalculatorTools />} />
               <Route path="/editor" element={<ImageEditor />} />
-              <Route path="/dev" element={<DeveloperTools />} />
+              <Route path="/generators/*" element={<ToolSectionPage tool={toolCards.generators} basePath="/generators" />} />
+              <Route path="/analyzers/*" element={<ToolSectionPage tool={toolCards.analyzers} basePath="/analyzers" />} />
+              <Route path="/web-tools/*" element={<ToolSectionPage tool={toolCards['web-tools']} basePath="/web-tools" />} />
+              <Route path="/network-tools/*" element={<ToolSectionPage tool={toolCards['network-tools']} basePath="/network-tools" />} />
+              <Route path="/dev/*" element={<Navigate to="/generators" replace />} />
               <Route path="/streamer" element={<StreamerDashboard />} />
               <Route path="/sys" element={<SystemInfo />} />
               <Route path="/privacy" element={<Privacy />} />

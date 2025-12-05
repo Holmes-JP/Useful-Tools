@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { Copy, RefreshCw, Key, Fingerprint, Hash, Settings2 } from 'lucide-react';
-import { useHashGenerator, SaltMode } from '../../../../hooks/useHashGenerator';
+import { Copy, RefreshCw, Key, Fingerprint, Hash} from 'lucide-react';
+import { useHashGenerator } from '../../../../hooks/useHashGenerator';
 import clsx from 'clsx';
+import HashGenerator from '../../../Generators/HashGenerator/HashGenerator';
 
 export default function GeneratorTools() {
     const [activeTab, setActiveTab] = useState<'uuid' | 'password' | 'hash'>('uuid');
@@ -241,77 +242,15 @@ export default function GeneratorTools() {
 
             {/* ================= Hash View ================= */}
             {activeTab === 'hash' && (
-                <div className="animate-fade-in space-y-6">
-                    <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg">
-                        <div className="grid md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="block text-xs text-gray-400 font-bold uppercase">Input Text</label>
-                                <textarea
-                                    value={hashText}
-                                    onChange={(e) => setHashText(e.target.value)}
-                                    placeholder="Type text to hash..."
-                                    className="w-full bg-gray-900 border border-gray-600 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-pink-500 outline-none h-32 resize-none"
-                                />
-                            </div>
-
-                            <div className="space-y-4 bg-gray-900/50 p-4 rounded-xl border border-gray-700">
-                                <div className="flex items-center gap-2 text-gray-300 font-bold text-sm mb-2">
-                                    <Settings2 size={14} /> Salt Configuration
-                                </div>
-                                <div>
-                                    <label className="block text-xs text-gray-500 mb-1">Salt String</label>
-                                    <input
-                                        type="text"
-                                        value={salt}
-                                        onChange={(e) => setSalt(e.target.value)}
-                                        placeholder="Optional salt..."
-                                        className="w-full bg-gray-800 border border-gray-600 text-white px-3 py-2 rounded-lg focus:ring-1 focus:ring-pink-500 outline-none text-sm"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs text-gray-500 mb-2">Mode</label>
-                                    <div className="flex gap-1">
-                                        {(['append', 'prepend', 'hmac'] as SaltMode[]).map((mode) => (
-                                            <button
-                                                key={mode}
-                                                onClick={() => setSaltMode(mode)}
-                                                className={clsx(
-                                                    "flex-1 py-1.5 rounded text-[10px] font-bold transition-colors border uppercase tracking-wider",
-                                                    saltMode === mode
-                                                        ? "bg-pink-500/20 border-pink-500 text-pink-400"
-                                                        : "bg-gray-800 border-gray-600 text-gray-500 hover:bg-gray-700"
-                                                )}
-                                            >
-                                                {mode}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {hashText && (
-                        <div className="space-y-3">
-                            {hashResults.map((res) => (
-                                <div key={res.algo} className="group bg-gray-800 rounded-xl border border-gray-700 overflow-hidden hover:border-pink-500/50 transition-all flex">
-                                    <div className="bg-gray-900/80 w-24 flex items-center justify-center border-r border-gray-700 px-2 shrink-0">
-                                        <span className="text-xs font-bold text-gray-400">{res.algo}</span>
-                                    </div>
-                                    <div className="flex-1 p-3 font-mono text-sm text-gray-300 break-all flex items-center">
-                                        {res.value}
-                                    </div>
-                                    <button
-                                        onClick={() => copyToClipboard(res.value)}
-                                        className="w-12 bg-gray-800/50 hover:bg-pink-500 hover:text-white border-l border-gray-700 text-gray-500 flex items-center justify-center transition-colors shrink-0"
-                                    >
-                                        <Copy size={18} />
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                <HashGenerator
+                    text={hashText}
+                    setText={setHashText}
+                    salt={salt}
+                    setSalt={setSalt}
+                    saltMode={saltMode}
+                    setSaltMode={setSaltMode}
+                    results={hashResults}
+                />
             )}
         </div>
     );
