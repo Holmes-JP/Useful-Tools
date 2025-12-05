@@ -149,6 +149,10 @@ export default function AudioEditor() {
     const [looping, setLooping] = useState(false);
     const [playbackRate, setPlaybackRate] = useState(1);
     const [markers, setMarkers] = useState<{ id: string; label: string; time: number; regionId: string }[]>([]);
+    const [rangeStart, setRangeStart] = useState('0');
+    const [rangeEnd, setRangeEnd] = useState('0');
+    const [minZoom, setMinZoom] = useState(20);
+    const maxZoom = 800;
     const [working, setWorking] = useState(false);
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         accept: { 'audio/*': ['.wav', '.mp3', '.ogg', '.m4a'] },
@@ -201,6 +205,7 @@ export default function AudioEditor() {
             if (decoded) {
                 setClips([{ id: uuidv4(), buffer: decoded, label: 'Clip 1' }]);
             }
+            computeMinZoom();
         });
         ws.on('play', () => setIsPlaying(true));
         ws.on('pause', () => setIsPlaying(false));
@@ -281,6 +286,52 @@ export default function AudioEditor() {
     }, [zoom, audioBuffer]);
 
     useEffect(() => {
+        computeMinZoom();
+    }, [audioBuffer]);
+
+    useEffect(() => {
+        if (!audioBuffer) return;
+        const handler = () => computeMinZoom();
+        window.addEventListener('resize', handler);
+        return () => window.removeEventListener('resize', handler);
+    }, [audioBuffer]);
+
+    useEffect(() => {
+        const el = waveformRef.current;
+        if (!el) return;
+        const onWheel = (e: WheelEvent) => {
+            if (!audioBuffer) return;
+            if (e.ctrlKey || e.metaKey) return;
+            e.preventDefault();
+            const ws = wavesurferRef.current;
+            if (!ws) return;
+            if (e.shiftKey) {
+                // Shift+wheel: pan/scroll horizontally without double scroll
+                const dur = ws.getDuration() || audioBuffer.duration || 1;
+                const deltaSec = (e.deltaY + e.deltaX) * (dur / 4000);
+                const next = clamp(ws.getCurrentTime() + deltaSec, 0, dur);
+                ws.setTime(next);
+                return;
+            }
+            // wheel: zoom centered around cursor position
+            const factor = e.deltaY < 0 ? 1.08 : 0.92;
+            setZoom(z => clamp(Math.round(z * factor), minZoom, maxZoom));
+        };
+        el.addEventListener('wheel', onWheel, { passive: false });
+        return () => el.removeEventListener('wheel', onWheel);
+    }, [audioBuffer, minZoom]);
+
+    const computeMinZoom = () => {
+        if (!audioBuffer || !waveformRef.current) return;
+        const rect = waveformRef.current.getBoundingClientRect();
+        const width = rect.width || 1;
+        const durationSec = Math.max(0.01, audioBuffer.duration);
+        const pxPerSec = Math.max(10, Math.ceil(width / durationSec));
+        setMinZoom(pxPerSec);
+        setZoom(z => clamp(z, pxPerSec, maxZoom));
+    };
+
+    useEffect(() => {
         const ws = wavesurferRef.current;
         if (!ws || !audioBuffer) return;
         ws.setPlaybackRate(playbackRate);
@@ -295,6 +346,27 @@ export default function AudioEditor() {
         setSelectionRegionId(null);
         selectionRegionRef.current = null;
         selectionRef.current = null;
+    };
+
+    const setSelectionRegion = (start: number, end: number) => {
+        const regionsAny = regionsPluginRef.current as any;
+        const ws = wavesurferRef.current as any;
+        if (!regionsAny?.addRegion || !ws) return;
+        const s = clamp(start, 0, duration || 0);
+        const e = clamp(end, s + 0.01, duration || 0.01);
+        if (selectionRegionRef.current) {
+            regionsAny.removeRegion(selectionRegionRef.current);
+        }
+        const region = regionsAny.addRegion({
+            start: s,
+            end: e,
+            color: 'rgba(56,189,248,0.18)',
+        });
+        selectionRegionRef.current = region.id;
+        selectionRef.current = { start: s, end: e };
+        setSelection({ start: s, end: e });
+        setSelectionRegionId(region.id);
+        ws.setTime(s);
     };
 
     const rebuildFromBuffer = (buffer: AudioBuffer, nextClips?: Clip[]) => {
@@ -450,6 +522,16 @@ export default function AudioEditor() {
         return `${selection.start.toFixed(2)}s - ${selection.end.toFixed(2)}s (${(selection.end - selection.start).toFixed(2)}s)`;
     }, [selection]);
 
+    useEffect(() => {
+        if (selection) {
+            setRangeStart(selection.start.toFixed(2));
+            setRangeEnd(selection.end.toFixed(2));
+        } else if (audioBuffer) {
+            setRangeStart('0');
+            setRangeEnd(audioBuffer.duration.toFixed(2));
+        }
+    }, [selection, audioBuffer]);
+
     return (
         <div className="space-y-8 p-4 text-white">
             <div className="text-center space-y-2">
@@ -530,14 +612,14 @@ export default function AudioEditor() {
                                 <span className="w-20 text-gray-400">Zoom</span>
                                 <input
                                     type="range"
-                                    min={40}
-                                    max={400}
+                                    min={20}
+                                    max={800}
                                     step={10}
                                     value={zoom}
                                     onChange={(e) => setZoom(Number(e.target.value))}
                                     className="flex-1"
                                 />
-                                <span className="text-xs text-gray-400 w-12">{zoom}px/s</span>
+                                <span className="text-xs text-gray-400 w-20">{zoom}px/s</span>
                             </label>
                             <label className="flex items-center gap-3 text-sm text-gray-300">
                                 <span className="w-20 text-gray-400">Speed</span>
@@ -565,6 +647,68 @@ export default function AudioEditor() {
                                 />
                                 <span className="text-xs text-gray-400 w-12">{volume.toFixed(2)}x</span>
                             </label>
+                        </div>
+
+                        <div className="grid md:grid-cols-3 gap-3 bg-slate-900/50 border border-gray-800 rounded-xl p-3">
+                            <div className="flex flex-col gap-2 text-sm text-gray-300">
+                                <label className="text-xs text-gray-400">Start (s)</label>
+                                <input
+                                    type="number"
+                                    min={0}
+                                    step={0.05}
+                                    value={rangeStart}
+                                    onChange={(e) => setRangeStart(e.target.value)}
+                                    className="bg-gray-900 border border-gray-800 rounded px-2 py-1 text-white"
+                                />
+                            </div>
+                            <div className="flex flex-col gap-2 text-sm text-gray-300">
+                                <label className="text-xs text-gray-400">End (s)</label>
+                                <input
+                                    type="number"
+                                    min={0}
+                                    step={0.05}
+                                    value={rangeEnd}
+                                    onChange={(e) => setRangeEnd(e.target.value)}
+                                    className="bg-gray-900 border border-gray-800 rounded px-2 py-1 text-white"
+                                />
+                            </div>
+                            <div className="flex flex-wrap gap-2 items-end">
+                                <button
+                                    className="px-3 py-2 rounded-lg bg-white/5 border border-gray-700 hover:bg-white/10 text-xs text-white disabled:opacity-50"
+                                    disabled={!hasAudio}
+                                    onClick={() => {
+                                        const start = parseFloat(rangeStart) || 0;
+                                        const end = parseFloat(rangeEnd) || duration || 0;
+                                        setSelectionRegion(start, end);
+                                    }}
+                                >
+                                    Set Range
+                                </button>
+                                <button
+                                    className="px-3 py-2 rounded-lg bg-primary-500/80 text-black text-xs font-semibold hover:brightness-110 disabled:opacity-50"
+                                    disabled={!hasAudio}
+                                    onClick={() => {
+                                        const start = parseFloat(rangeStart) || 0;
+                                        const end = parseFloat(rangeEnd) || duration || 0;
+                                        setSelectionRegion(start, end);
+                                        trimToSelection();
+                                    }}
+                                >
+                                    Trim Range
+                                </button>
+                                <button
+                                    className="px-3 py-2 rounded-lg bg-white/5 border border-gray-700 hover:bg-white/10 text-xs text-white disabled:opacity-50"
+                                    disabled={!hasAudio}
+                                    onClick={() => {
+                                        const start = parseFloat(rangeStart) || 0;
+                                        const end = parseFloat(rangeEnd) || duration || 0;
+                                        setSelectionRegion(start, end);
+                                        exportSelection();
+                                    }}
+                                >
+                                    Export Range
+                                </button>
+                            </div>
                         </div>
 
                         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
