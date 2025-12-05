@@ -119,9 +119,6 @@ function Menu() {
                         {tool.label}
                     </div>
                     <p className="mt-3 text-gray-300 text-sm leading-relaxed">{tool.description}</p>
-                    <p className="mt-4 text-primary-400 text-sm inline-flex items-center gap-1">
-                        Open <span className="opacity-70 text-xs">/dev/{tool.slug}</span>
-                    </p>
                 </Link>
             ))}
         </div>
@@ -158,7 +155,7 @@ function ToolShell({ tool, childSlug }: { tool: ToolCard; childSlug?: string }) 
                         <Link
                             key={child.slug}
                             to={`/dev/${tool.slug}/${child.slug}`}
-                            className={`group rounded-xl border p-4 transition-all ${
+                            className={`group rounded-xl border p-4 transition-all max-w-xs ${
                                 isActive
                                     ? "border-primary-500/80 bg-gray-900"
                                     : "border-gray-800 bg-gray-900/60 hover:border-primary-500/60 hover:-translate-y-1"
@@ -169,9 +166,6 @@ function ToolShell({ tool, childSlug }: { tool: ToolCard; childSlug?: string }) 
                                 {child.label}
                             </div>
                             <p className="mt-3 text-sm text-gray-300 leading-relaxed">{child.description}</p>
-                            <p className="mt-4 text-primary-400 text-xs inline-flex items-center gap-1">
-                                Open /dev/{tool.slug}/{child.slug}
-                            </p>
                         </Link>
                     );
                 })}

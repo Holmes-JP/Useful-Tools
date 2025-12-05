@@ -37,34 +37,34 @@ export default function ToolSectionPage({ tool, basePath }: { tool: ToolCard; ba
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                {tool.children.map(child => {
-                    const isActive = child.slug === activeChild?.slug;
-                    return (
-                        <Link
-                            key={child.slug}
-                            to={`${basePath}/${child.slug}`}
-                            className={`group rounded-xl border p-4 transition-all ${
-                                isActive
-                                    ? "border-primary-500/80 bg-gray-900"
-                                    : "border-gray-800 bg-gray-900/60 hover:border-primary-500/60 hover:-translate-y-1"
-                            }`}
-                        >
-                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold bg-gray-800 text-gray-100 group-hover:bg-primary-500/20">
-                                {child.icon}
-                                {child.label}
-                            </div>
-                            <p className="mt-3 text-sm text-gray-300 leading-relaxed">{child.description}</p>
-                            <p className="mt-4 text-primary-400 text-xs inline-flex items-center gap-1">
-                                Open {basePath}/{child.slug}
-                            </p>
-                        </Link>
-                    );
-                })}
-            </div>
-
-            <div className="bg-gray-900/60 border border-gray-800 rounded-xl p-4">
-                {activeChild ? activeChild.element : <p className="text-gray-400 text-sm">Select a tool to get started.</p>}
+            <div className="flex flex-col lg:flex-row gap-4 items-start">
+                <div className="flex-1 bg-gray-900/60 border border-gray-800 rounded-xl p-4">
+                    {activeChild ? activeChild.element : <p className="text-gray-400 text-sm">Select a tool to get started.</p>}
+                </div>
+                <aside className="w-full lg:w-56">
+                    <div className="sticky top-4 space-y-2">
+                        {tool.children.map(child => {
+                            const isActive = child.slug === activeChild?.slug;
+                            return (
+                                <Link
+                                    key={child.slug}
+                                    to={`${basePath}/${child.slug}`}
+                                    className={`group rounded-xl border p-4 transition-all block max-w-xs ${
+                                        isActive
+                                            ? "border-primary-500/80 bg-gray-900"
+                                            : "border-gray-800 bg-gray-900/60 hover:border-primary-500/60 hover:-translate-y-1"
+                                    }`}
+                                >
+                                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold bg-gray-800 text-gray-100 group-hover:bg-primary-500/20">
+                                        {child.icon}
+                                        {child.label}
+                                    </div>
+                                    <p className="mt-3 text-sm text-gray-300 leading-relaxed">{child.description}</p>
+                                </Link>
+                            );
+                        })}
+                    </div>
+                </aside>
             </div>
         </div>
     );
