@@ -90,7 +90,7 @@ export default function QRPanel() {
     }
 
     return (
-        <div className="space-y-4">
+        <section className="bg-gray-900/50 border border-gray-800 rounded-xl p-4 space-y-4">
             <div className="flex items-center justify-between gap-2">
                 <div>
                     <h4 className="text-xl font-semibold text-white flex items-center gap-2">
@@ -99,34 +99,27 @@ export default function QRPanel() {
                     </h4>
                     <p className="text-xs text-gray-400">Generate or decode QR codes locally in your browser.</p>
                 </div>
-                <div className="text-xs text-gray-400 bg-gray-900/60 border border-gray-800 rounded-full px-3 py-1">
-                    No data leaves your device
+                <div className="flex gap-2">
+                    <button
+                        className={`px-4 py-2 rounded-lg text-sm font-semibold border ${qrTab === "generate" ? "bg-primary-500 text-black border-primary-500" : "bg-gray-800 text-gray-200 border-gray-700 hover:border-primary-500/60"}`}
+                        onClick={() => setQrTab("generate")}
+                    >
+                        Generate
+                    </button>
+                    <button
+                        className={`px-4 py-2 rounded-lg text-sm font-semibold border ${qrTab === "decode" ? "bg-primary-500 text-black border-primary-500" : "bg-gray-800 text-gray-200 border-gray-700 hover:border-primary-500/60"}`}
+                        onClick={() => setQrTab("decode")}
+                    >
+                        Decode
+                    </button>
                 </div>
             </div>
 
-            <div className="flex gap-2">
-                <button
-                    className={`px-4 py-2 rounded-lg text-sm font-semibold border ${qrTab === "generate" ? "bg-primary-500 text-black border-primary-500" : "bg-gray-800 text-gray-200 border-gray-700 hover:border-primary-500/60"}`}
-                    onClick={() => setQrTab("generate")}
-                >
-                    Generate
-                </button>
-                <button
-                    className={`px-4 py-2 rounded-lg text-sm font-semibold border ${qrTab === "decode" ? "bg-primary-500 text-black border-primary-500" : "bg-gray-800 text-gray-200 border-gray-700 hover:border-primary-500/60"}`}
-                    onClick={() => setQrTab("decode")}
-                >
-                    Decode
-                </button>
-            </div>
-
             {qrTab === "generate" ? (
-                <section className="bg-gray-900/50 border border-gray-800 rounded-xl p-4 space-y-4">
+                <div className="space-y-4">
                     <div className="flex items-center justify-between gap-2">
-                        <div>
-                            <h3 className="text-lg font-semibold text-white flex items-center gap-2"><QrCode size={18} /> QR Code Generator</h3>
-                            <p className="text-xs text-gray-400">All processing happens in your browser.</p>
-                        </div>
-                        <div className="flex gap-2">
+                        <p className="text-xs text-gray-400">All processing happens in your browser.</p>
+                        <div className="flex gap-2 flex-wrap justify-end">
                             {samples.map(s => (
                                 <button
                                     key={s.label}
@@ -145,7 +138,7 @@ export default function QRPanel() {
                             className="w-full bg-gray-900 border border-gray-800 rounded p-3 text-sm text-gray-100 min-h-[140px]"
                             value={generateText}
                             onChange={e => setGenerateText(e.target.value)}
-                            placeholder="https://example.com\nWIFI:T:WPA;S:MySSID;P:mypassword;;"
+                            placeholder="https://example.com&#10;WIFI:T:WPA;S:MySSID;P:mypassword;;"
                         />
                         <div className="flex flex-wrap gap-3 text-xs text-gray-400">
                             <label className="flex items-center gap-2">
@@ -291,14 +284,11 @@ export default function QRPanel() {
                             </div>
                         </div>
                     )}
-                </section>
+                </div>
             ) : (
-                <section className="bg-gray-900/50 border border-gray-800 rounded-xl p-4 space-y-4">
+                <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                        <div>
-                            <h3 className="text-lg font-semibold text-white flex items-center gap-2"><Upload size={18} /> QR Decoder</h3>
-                            <p className="text-xs text-gray-400">Upload or drop an image (PNG/JPEG/WebP).</p>
-                        </div>
+                        <p className="text-xs text-gray-400">Upload or drop an image (PNG/JPEG/WebP).</p>
                     </div>
 
                     <div
@@ -338,9 +328,9 @@ export default function QRPanel() {
                             </button>
                         </div>
                     )}
-                </section>
+                </div>
             )}
-        </div>
+        </section>
     );
 }
 

@@ -3,6 +3,7 @@ import { AlertCircle, Copy, RefreshCcw, Shield, ShieldCheck } from "lucide-react
 import { X509Certificate } from "@peculiar/x509";
 
 type ParsedCert = {
+    kind: "certificate";
     pem: string;
     index: number;
     subject: string;
@@ -17,6 +18,22 @@ type ParsedCert = {
     sha1?: string;
     sha256?: string;
 };
+
+type ParsedPublicKey = {
+    kind: "publicKey";
+    pem: string;
+    index: number;
+    keyType: string;
+    keySize?: number;
+    curve?: string;
+    exponent?: number;
+    modulusBits?: number;
+    spkiSha256?: string;
+    spkiSha1?: string;
+    message?: string;
+};
+
+type ParsedEntry = ParsedCert | ParsedPublicKey;
 
 type SampleKey = "valid";
 
@@ -45,9 +62,17 @@ wfHEb4AQyL/37xUV+XDjlN4g3KJd
     },
 };
 
-function parsePemChain(text: string) {
-    const matches = text.match(/-----BEGIN CERTIFICATE-----[^-]+-----END CERTIFICATE-----/g);
+function parsePemBlocks(text: string) {
+    const matches = text.match(/-----BEGIN [^-]+-----[^-]+-----END [^-]+-----/g);
     return matches || [];
+}
+
+function toArrayBufferFromPem(pem: string) {
+    const b64 = pem.replace(/-----BEGIN [^-]+-----/g, "").replace(/-----END [^-]+-----/g, "").replace(/\s+/g, "");
+    const binary = atob(b64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes.buffer;
 }
 
 function formatDate(d: Date) {
@@ -69,20 +94,134 @@ function abToHex(data: ArrayBuffer) {
     return Array.from(new Uint8Array(data)).map(b => b.toString(16).padStart(2, "0")).join("").toUpperCase().match(/.{1,2}/g)?.join(":") || "";
 }
 
+function readLength(view: Uint8Array, offset: number) {
+    let len = view[offset + 1];
+    let lenBytes = 1;
+    if (len & 0x80) {
+        const n = len & 0x7f;
+        len = 0;
+        for (let i = 0; i < n; i++) len = (len << 8) | view[offset + 2 + i];
+        lenBytes = 1 + n;
+    }
+    return { length: len, header: lenBytes + 1 };
+}
+
+function decodeOid(bytes: Uint8Array) {
+    if (!bytes.length) return "";
+    const first = bytes[0];
+    const parts = [Math.floor(first / 40), first % 40];
+    let value = 0;
+    for (let i = 1; i < bytes.length; i++) {
+        value = (value << 7) | (bytes[i] & 0x7f);
+        if (!(bytes[i] & 0x80)) {
+            parts.push(value);
+            value = 0;
+        }
+    }
+    return parts.join(".");
+}
+
+function parseSpki(bytes: Uint8Array): ParsedPublicKey | null {
+    try {
+        let offset = 0;
+        if (bytes[offset++] !== 0x30) return null;
+        const seqLen = readLength(bytes, offset - 1);
+        offset += seqLen.header;
+        if (bytes[offset++] !== 0x30) return null;
+        const algLen = readLength(bytes, offset - 1);
+        offset += algLen.header;
+        if (bytes[offset++] !== 0x06) return null;
+        const oidLen = readLength(bytes, offset - 1);
+        const oid = decodeOid(bytes.slice(offset, offset + oidLen.length));
+        offset += oidLen.length;
+        let curveOid = "";
+        if (bytes[offset] === 0x06) {
+            const cLen = readLength(bytes, offset);
+            curveOid = decodeOid(bytes.slice(offset + cLen.header - 1, offset + cLen.header - 1 + cLen.length));
+            offset += cLen.header + cLen.length - 1;
+        }
+        while (bytes[offset] === 0x05) offset += 2; // skip NULL
+        if (bytes[offset++] !== 0x03) return null;
+        const bitLen = readLength(bytes, offset - 1);
+        offset += bitLen.header;
+        const bitString = bytes.slice(offset + 1, offset + bitLen.length); // skip unused bits byte
+
+        if (oid === "1.2.840.113549.1.1.1") {
+            let p = 0;
+            if (bitString[p++] !== 0x30) return null;
+            const seq2 = readLength(bitString, p - 1);
+            p += seq2.header;
+            if (bitString[p++] !== 0x02) return null;
+            const modLen = readLength(bitString, p - 1);
+            p += modLen.header;
+            const modulusBytes = bitString.slice(p, p + modLen.length);
+            const modulusBits = modulusBytes.length * 8;
+            p += modLen.length;
+            if (bitString[p++] !== 0x02) return null;
+            const expLen = readLength(bitString, p - 1);
+            p += expLen.header;
+            let exponent = 0;
+            for (let i = 0; i < expLen.length; i++) exponent = (exponent << 8) | bitString[p + i];
+            return {
+                kind: "publicKey",
+                pem: "",
+                index: 1,
+                keyType: "RSA Public Key",
+                keySize: modulusBits,
+                exponent,
+                modulusBits,
+            };
+        }
+        if (oid === "1.2.840.10045.2.1") {
+            let curve = "";
+            if (curveOid === "1.2.840.10045.3.1.7") curve = "P-256";
+            else if (curveOid === "1.3.132.0.34") curve = "P-384";
+            else if (curveOid === "1.3.132.0.35") curve = "P-521";
+            return {
+                kind: "publicKey",
+                pem: "",
+                index: 1,
+                keyType: `EC Public Key${curve ? ` (${curve})` : ""}`,
+                keySize: bitString.length * 8,
+                curve,
+            };
+        }
+        return {
+            kind: "publicKey",
+            pem: "",
+            index: 1,
+            keyType: `Public Key (OID ${oid})`,
+        };
+    } catch {
+        return null;
+    }
+}
+
+async function hashBuffer(buffer: ArrayBuffer, algo: AlgorithmIdentifier = "SHA-256") {
+    const digest = await crypto.subtle.digest(algo, buffer);
+    return abToHex(digest);
+}
+
+function pemFromDer(buffer: ArrayBuffer, label: string) {
+    const b64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+    const wrapped = b64.match(/.{1,64}/g)?.join("\n") ?? b64;
+    return `-----BEGIN ${label}-----\n${wrapped}\n-----END ${label}-----`;
+}
+
 export default function CertificateAnalyzerPanel() {
     const [input, setInput] = useState("");
     const [hostname, setHostname] = useState("");
     const [error, setError] = useState<string | null>(null);
-    const [certs, setCerts] = useState<ParsedCert[]>([]);
+    const [entries, setEntries] = useState<ParsedEntry[]>([]);
     const [activeIdx, setActiveIdx] = useState(0);
     const [selectedSample, setSelectedSample] = useState<SampleKey>("valid");
 
-    const activeCert = certs[activeIdx];
+    const active = entries[activeIdx];
 
     const hostnameStatus = useMemo(() => {
-        if (!hostname || !activeCert) return null;
+        if (!hostname || !active || active.kind !== "certificate") return null;
         const host = hostname.toLowerCase();
-        const dns = activeCert.sanDNS.map(d => d.toLowerCase());
+        const dns = active.sanDNS.map(d => d.toLowerCase());
         const matches = dns.some(d => {
             if (d.startsWith("*.") && host.endsWith(d.slice(1))) return true;
             return d === host;
@@ -91,80 +230,96 @@ export default function CertificateAnalyzerPanel() {
             matches,
             message: matches ? "Hostname OK" : `Hostname mismatch: 証明書は ${dns.join(", ")} に対し、入力は ${host}`,
         };
-    }, [hostname, activeCert]);
+    }, [hostname, active]);
+
+    async function parseCertificate(pem: string, idx: number): Promise<ParsedCert | null> {
+        try {
+            const cert = new X509Certificate(pem);
+            const sha1 = await cert.getThumbprint("SHA-1").then(abToHex);
+            const sha256 = await cert.getThumbprint("SHA-256").then(abToHex);
+            // subjectAltName may not be typed on X509Certificate; fallback to empty arrays when unavailable.
+            const sanDNS: string[] = [];
+            const sanIP: string[] = [];
+            return {
+                kind: "certificate",
+                pem,
+                index: idx,
+                subject: cert.subject,
+                issuer: cert.issuer,
+                notBefore: cert.notBefore,
+                notAfter: cert.notAfter,
+                signatureAlgorithm: typeof cert.signatureAlgorithm === "string" ? cert.signatureAlgorithm : (cert.signatureAlgorithm as any)?.name || "Unknown",
+                publicKeyAlgorithm: (cert.publicKey as any)?.algorithm?.name || "Unknown",
+                publicKeySize: undefined,
+                sanDNS,
+                sanIP,
+                sha1,
+                sha256,
+            };
+        } catch {
+            return null;
+        }
+    }
+
+    async function parsePublicKey(pem: string, idx: number): Promise<ParsedPublicKey | null> {
+        try {
+            const ab = toArrayBufferFromPem(pem);
+            const parsed = parseSpki(new Uint8Array(ab));
+            if (!parsed) return null;
+            const spkiSha256 = await hashBuffer(ab, "SHA-256");
+            const spkiSha1 = await hashBuffer(ab, "SHA-1");
+            return {
+                ...parsed,
+                pem,
+                index: idx,
+                spkiSha256,
+                spkiSha1,
+            };
+        } catch {
+            return null;
+        }
+    }
 
     async function analyze(text?: string) {
         const pemInput = (text ?? input).trim();
         setError(null);
-        setCerts([]);
+        setEntries([]);
         setActiveIdx(0);
         if (!pemInput) {
-            setError("証明書を入力してください。");
+            setError("証明書／公開鍵を入力してください。");
             return;
         }
-        const chain = parsePemChain(pemInput);
-        if (!chain.length) {
-            setError("PEM 形式の証明書として認識できませんでした。BEGIN/END 行が正しいか確認してください。");
+        if (/BEGIN PRIVATE KEY/i.test(pemInput)) {
+            setError("秘密鍵（PRIVATE KEY）は解析対象外です。公開鍵／証明書のみ入力してください。");
             return;
         }
-        const parsed: ParsedCert[] = [];
-        for (let i = 0; i < chain.length; i++) {
-            try {
-                const cert = new X509Certificate(chain[i]);
-                const sha1 = await cert.getThumbprint("SHA-1").then(abToHex);
-                const sha256 = await cert.getThumbprint("SHA-256").then(abToHex);
-                
-                // Extract SAN from certificate extensions - simplified approach
-                let sanDNS: string[] = [];
-                let sanIP: string[] = [];
-                try {
-                    // Try to find SubjectAltName extension
-                    const extensions = cert.extensions || [];
-                    for (const ext of extensions) {
-                        const extId = (ext as any).oid || (ext as any).extnID;
-                        if (extId === "2.5.29.17" || extId === "subjectAltName") {
-                            const value = (ext as any).value || (ext as any).extnValue;
-                            if (value) {
-                                sanDNS = (value as any).dnsNames || [];
-                                sanIP = (value as any).ipAddresses || [];
-                                break;
-                            }
-                        }
-                    }
-                } catch (e) {
-                    // No SAN found
-                }
-                
-                const sigAlg = cert.signatureAlgorithm?.name ? String(cert.signatureAlgorithm.name) : "Unknown";
-                const pubKeySize = (cert.publicKey?.algorithm as any)?.modulusLength || undefined;
-                
-                parsed.push({
-                    pem: chain[i],
-                    index: i + 1,
-                    subject: cert.subject,
-                    issuer: cert.issuer,
-                    notBefore: cert.notBefore,
-                    notAfter: cert.notAfter,
-                    signatureAlgorithm: sigAlg,
-                    publicKeyAlgorithm: cert.publicKey?.algorithm?.name ? String(cert.publicKey.algorithm.name) : "Unknown",
-                    publicKeySize: pubKeySize,
-                    sanDNS,
-                    sanIP,
-                    sha1,
-                    sha256,
-                });
-            } catch (e: any) {
-                setError("証明書の解析に失敗しました。破損しているか、サポートされていない形式の可能性があります。");
-                return;
+        const blocks = parsePemBlocks(pemInput);
+        if (!blocks.length) {
+            setError("PEM 形式の証明書／公開鍵として認識できませんでした。BEGIN/END 行を確認してください。");
+            return;
+        }
+        const parsed: ParsedEntry[] = [];
+        let idx = 1;
+        for (const b of blocks) {
+            if (/BEGIN CERTIFICATE/i.test(b)) {
+                const c = await parseCertificate(b, idx++);
+                if (c) parsed.push(c);
+            } else if (/BEGIN PUBLIC KEY|BEGIN RSA PUBLIC KEY|BEGIN EC PUBLIC KEY/i.test(b)) {
+                const p = await parsePublicKey(b, idx++);
+                if (p) parsed.push(p);
             }
         }
-        setCerts(parsed);
+        if (!parsed.length) {
+            setError("解析できる証明書／公開鍵が見つかりませんでした。");
+            return;
+        }
+        setEntries(parsed);
     }
 
     function clearAll() {
         setInput("");
         setHostname("");
-        setCerts([]);
+        setEntries([]);
         setActiveIdx(0);
         setError(null);
     }
@@ -180,29 +335,45 @@ export default function CertificateAnalyzerPanel() {
         const file = e.target.files?.[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = () => {
+        reader.onload = async () => {
             const result = reader.result;
-            if (typeof result === "string") {
+            if (result instanceof ArrayBuffer) {
+                // Try certificate
+                try {
+                    const pem = pemFromDer(result, "CERTIFICATE");
+                    setInput(pem);
+                    analyze(pem);
+                    return;
+                } catch {
+                    // Try public key (SPKI)
+                    const pem = pemFromDer(result, "PUBLIC KEY");
+                    setInput(pem);
+                    analyze(pem);
+                }
+            } else if (typeof result === "string") {
                 setInput(result);
                 analyze(result);
-            } else if (result instanceof ArrayBuffer) {
-                const b64 = btoa(String.fromCharCode(...new Uint8Array(result)));
-                const pem = `-----BEGIN CERTIFICATE-----\n${b64.match(/.{1,64}/g)?.join("\n")}\n-----END CERTIFICATE-----`;
-                setInput(pem);
-                analyze(pem);
             }
         };
         reader.readAsArrayBuffer(file);
     }
 
-    const validityBadge = activeCert ? badgeForValidity(activeCert) : null;
+    const validityBadge = active && active.kind === "certificate" ? badgeForValidity(active) : null;
+
+    const opensslHint = active
+        ? active.kind === "certificate"
+            ? "openssl x509 -in cert.pem -text -noout"
+            : active.keyType.includes("EC")
+                ? "openssl ec -pubin -in pubkey.pem -text -noout"
+                : "openssl rsa -pubin -in pubkey.pem -text -noout"
+        : "";
 
     return (
         <div className="space-y-4">
             <div>
                 <div className="text-xs uppercase tracking-wide text-gray-500">Analyzer</div>
-                <h3 className="text-2xl font-bold text-white">Certificate Analyzer</h3>
-                <p className="text-gray-400 text-sm">PEM/DER の X.509 証明書を解析し、期限や SAN を確認します。処理はブラウザ内のみで行われます。</p>
+                <h3 className="text-2xl font-bold text-white">証明書 / 公開鍵 解析</h3>
+                <p className="text-gray-400 text-sm">PEM/DER の X.509 証明書と公開鍵を解析します（ローカル処理のみ）。</p>
             </div>
 
             {error && (
@@ -214,7 +385,7 @@ export default function CertificateAnalyzerPanel() {
 
             <div className="bg-gray-900/60 border border-gray-800 rounded-xl p-4 space-y-3">
                 <div className="flex flex-wrap items-center gap-3 text-sm">
-                    <label className="text-gray-300">Certificate (PEM)</label>
+                    <label className="text-gray-300">PEM / DER 入力</label>
                     <div className="flex items-center gap-2 ml-auto">
                         <input type="file" accept=".pem,.crt,.cer,.der" onChange={onFileChange} className="text-xs text-gray-300" />
                         <select
@@ -234,7 +405,7 @@ export default function CertificateAnalyzerPanel() {
                     onChange={e => setInput(e.target.value)}
                 />
                 <div className="flex flex-wrap gap-3">
-                    <button className="px-4 py-2 bg-primary-500 text-black rounded font-semibold" onClick={() => analyze()}>Analyze Certificate</button>
+                    <button className="px-4 py-2 bg-primary-500 text-black rounded font-semibold" onClick={() => analyze()}>Analyze</button>
                     <button className="px-3 py-2 bg-gray-800 text-gray-100 rounded border border-gray-700" onClick={clearAll}>
                         <RefreshCcw size={14} className="inline mr-1" /> Clear
                     </button>
@@ -251,34 +422,34 @@ export default function CertificateAnalyzerPanel() {
                 </div>
             </div>
 
-            {certs.length > 0 && (
+            {entries.length > 0 && (
                 <div className="bg-gray-900/60 border border-gray-800 rounded-xl p-4 space-y-4">
                     <div className="flex flex-wrap items-center gap-3 text-sm text-gray-300">
                         <Shield size={16} className="text-primary-400" />
-                        <span>チェーン内証明書: {certs.length} 枚</span>
+                        <span>解析対象: {entries.length} 件</span>
                         <div className="flex gap-2">
-                            {certs.map((c, idx) => (
+                            {entries.map((c, idx) => (
                                 <button
-                                    key={idx}
+                                    key={c.pem + idx}
                                     className={`px-3 py-1 rounded border text-xs ${idx === activeIdx ? "border-primary-500/60 text-primary-300" : "border-gray-700 text-gray-300 hover:border-primary-500/40"}`}
                                     onClick={() => setActiveIdx(idx)}
                                 >
-                                    #{c.index}
+                                    #{idx + 1} {c.kind === "certificate" ? "Certificate" : "Public Key"}
                                 </button>
                             ))}
                         </div>
                     </div>
 
-                    {activeCert && (
+                    {active && active.kind === "certificate" && (
                         <div className="space-y-3">
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                                 <div className="bg-gray-950 border border-gray-800 rounded p-3 space-y-2">
                                     <div className="text-sm text-gray-400">Subject</div>
-                                    <div className="text-gray-100 text-sm break-words">{activeCert.subject}</div>
+                                    <div className="text-gray-100 text-sm break-words">{active.subject}</div>
                                 </div>
                                 <div className="bg-gray-950 border border-gray-800 rounded p-3 space-y-2">
                                     <div className="text-sm text-gray-400">Issuer</div>
-                                    <div className="text-gray-100 text-sm break-words">{activeCert.issuer}</div>
+                                    <div className="text-gray-100 text-sm break-words">{active.issuer}</div>
                                 </div>
                             </div>
 
@@ -288,8 +459,8 @@ export default function CertificateAnalyzerPanel() {
                                         <ShieldCheck size={16} className="text-primary-400" />
                                         <span>Validity</span>
                                     </div>
-                                    <div className="text-gray-100 text-sm">Not Before: {formatDate(activeCert.notBefore)}</div>
-                                    <div className="text-gray-100 text-sm">Not After: {formatDate(activeCert.notAfter)}</div>
+                                    <div className="text-gray-100 text-sm">Not Before: {formatDate(active.notBefore)}</div>
+                                    <div className="text-gray-100 text-sm">Not After: {formatDate(active.notAfter)}</div>
                                     {validityBadge && (
                                         <div className={`inline-flex px-2 py-1 rounded border text-xs ${validityBadge.color}`}>{validityBadge.text}</div>
                                     )}
@@ -301,12 +472,12 @@ export default function CertificateAnalyzerPanel() {
                                 </div>
                                 <div className="bg-gray-950 border border-gray-800 rounded p-3 space-y-2">
                                     <div className="text-sm text-gray-400">Public Key</div>
-                                    <div className="text-gray-100 text-sm">{activeCert.publicKeyAlgorithm} {activeCert.publicKeySize ? `(${activeCert.publicKeySize} bit)` : ""}</div>
+                                    <div className="text-gray-100 text-sm">{active.publicKeyAlgorithm} {active.publicKeySize ? `(${active.publicKeySize} bit)` : ""}</div>
                                     <div className="text-sm text-gray-400">Signature Algorithm</div>
-                                    <div className="text-gray-100 text-sm">{activeCert.signatureAlgorithm}</div>
+                                    <div className="text-gray-100 text-sm">{active.signatureAlgorithm}</div>
                                     <div className="text-sm text-gray-400">SAN</div>
-                                    <div className="text-gray-100 text-sm">DNS: {activeCert.sanDNS.join(", ") || "-"}</div>
-                                    <div className="text-gray-100 text-sm">IP: {activeCert.sanIP.join(", ") || "-"}</div>
+                                    <div className="text-gray-100 text-sm">DNS: {active.sanDNS.join(", ") || "-"}</div>
+                                    <div className="text-gray-100 text-sm">IP: {active.sanIP.join(", ") || "-"}</div>
                                 </div>
                             </div>
 
@@ -317,13 +488,13 @@ export default function CertificateAnalyzerPanel() {
                                     </div>
                                     <div className="text-xs text-gray-300 break-all flex items-center gap-2">
                                         <span className="text-gray-400">SHA-256:</span>
-                                        <span>{activeCert.sha256 || "-"}</span>
-                                        {activeCert.sha256 && <button className="px-2 py-1 bg-gray-800 border border-gray-700 rounded text-gray-100" onClick={() => navigator.clipboard?.writeText(activeCert.sha256!)}>Copy</button>}
+                                        <span>{active.sha256 || "-"}</span>
+                                        {active.sha256 && <button className="px-2 py-1 bg-gray-800 border border-gray-700 rounded text-gray-100" onClick={() => navigator.clipboard?.writeText(active.sha256!)}>Copy</button>}
                                     </div>
                                     <div className="text-xs text-gray-300 break-all flex items-center gap-2">
                                         <span className="text-gray-400">SHA-1:</span>
-                                        <span>{activeCert.sha1 || "-"}</span>
-                                        {activeCert.sha1 && <button className="px-2 py-1 bg-gray-800 border border-gray-700 rounded text-gray-100" onClick={() => navigator.clipboard?.writeText(activeCert.sha1!)}>Copy</button>}
+                                        <span>{active.sha1 || "-"}</span>
+                                        {active.sha1 && <button className="px-2 py-1 bg-gray-800 border border-gray-700 rounded text-gray-100" onClick={() => navigator.clipboard?.writeText(active.sha1!)}>Copy</button>}
                                     </div>
                                 </div>
                                 <div className="bg-gray-950 border border-gray-800 rounded p-3 space-y-2 text-sm text-gray-300">
@@ -331,15 +502,48 @@ export default function CertificateAnalyzerPanel() {
                                         <AlertCircle size={16} className="text-primary-400" />
                                         <span>診断コメント</span>
                                     </div>
-                                    {activeCert.publicKeySize && activeCert.publicKeySize < 2048 && (
+                                    {active.publicKeyAlgorithm?.toLowerCase().includes("rsa") && active.publicKeySize && active.publicKeySize < 2048 && (
                                         <div className="text-red-300">RSA 2048 未満は弱いとされます。2048bit 以上を推奨します。</div>
                                     )}
-                                    {activeCert.signatureAlgorithm?.toLowerCase().includes("sha1") && (
+                                    {active.signatureAlgorithm?.toLowerCase().includes("sha1") && (
                                         <div className="text-red-300">署名アルゴリズムが SHA-1 です。SHA-256 以上への移行を推奨します。</div>
                                     )}
-                                    {!activeCert.publicKeySize && <div className="text-gray-400">鍵長情報を取得できませんでした。</div>}
+                                    {!active.publicKeySize && <div className="text-gray-400">鍵長情報を取得できませんでした。</div>}
                                 </div>
                             </div>
+                        </div>
+                    )}
+
+                    {active && active.kind === "publicKey" && (
+                        <div className="space-y-3">
+                            <div className="bg-gray-950 border border-gray-800 rounded p-3 space-y-2 text-sm text-gray-200">
+                                <div>Key Type: {active.keyType}</div>
+                                <div>Key Size: {active.keySize ? `${active.keySize} bit` : "N/A"}</div>
+                                {active.curve && <div>Curve: {active.curve}</div>}
+                                {active.modulusBits && <div>Modulus: {active.modulusBits} bit</div>}
+                                {active.exponent && <div>Exponent: {active.exponent} (0x{active.exponent.toString(16)})</div>}
+                                {active.spkiSha256 && (
+                                    <div className="text-xs text-gray-300 break-all flex items-center gap-2">
+                                        <span className="text-gray-400">SPKI SHA-256:</span>
+                                        <span>{active.spkiSha256}</span>
+                                        <button className="px-2 py-1 bg-gray-800 border border-gray-700 rounded text-gray-100" onClick={() => navigator.clipboard?.writeText(active.spkiSha256!)}>Copy</button>
+                                    </div>
+                                )}
+                                {active.spkiSha1 && (
+                                    <div className="text-xs text-gray-300 break-all flex items-center gap-2">
+                                        <span className="text-gray-400">SPKI SHA-1:</span>
+                                        <span>{active.spkiSha1}</span>
+                                        <button className="px-2 py-1 bg-gray-800 border border-gray-700 rounded text-gray-100" onClick={() => navigator.clipboard?.writeText(active.spkiSha1!)}>Copy</button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {opensslHint && (
+                        <div className="flex items-center gap-2 text-xs text-gray-300 bg-gray-950 border border-gray-800 rounded p-3">
+                            OpenSSL: <code className="break-all">{opensslHint}</code>
+                            <button className="px-2 py-1 bg-gray-800 border border-gray-700 rounded text-gray-100" onClick={() => navigator.clipboard?.writeText(opensslHint)}>Copy</button>
                         </div>
                     )}
                 </div>
@@ -347,7 +551,7 @@ export default function CertificateAnalyzerPanel() {
 
             <div className="flex items-center gap-2 text-xs text-gray-500">
                 <Shield size={14} />
-                入力された証明書データはブラウザ内でのみ処理され、外部に送信されません。
+                入力された証明書・公開鍵はブラウザ内でのみ処理され、外部に送信されません。
             </div>
         </div>
     );

@@ -57,7 +57,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     })}
                 </nav>
             </aside>
-            <main className="flex-1 p-3 sm:p-5 lg:p-8 overflow-y-auto h-screen relative bg-[#050712] text-slate-100 overflow-hidden">
+            <main className="flex-1 p-3 sm:p-5 lg:p-8 relative bg-[#050712] text-slate-100">
                 <div className="absolute inset-0 w-full h-full bg-[radial-gradient(circle_at_15%_25%,rgba(14,165,233,0.14)_0,transparent_32%),radial-gradient(circle_at_80%_10%,rgba(59,130,246,0.12)_0,transparent_30%),radial-gradient(circle_at_20%_85%,rgba(52,211,153,0.12)_0,transparent_36%),radial-gradient(circle_at_80%_80%,rgba(236,72,153,0.12)_0,transparent_32%)] blur-3xl -z-10 pointer-events-none" />
                 <div className="w-full max-w-[1400px] mx-auto px-2 sm:px-4 pt-6 lg:pt-2 pb-16">{children}</div>
             </main>

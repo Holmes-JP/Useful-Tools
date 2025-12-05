@@ -26,6 +26,8 @@
     "ip-subnet-calculator": "^2.0.1",
     "japanese-holidays": "^1.0.10",
     "js-yaml": "^4.1.0",
+    "jsqr": "^1.4.0",
+    "jszip": "^3.10.1",
     "jwt-decode": "^3.1.2",
     "lucide-react": "^0.460.0",
     "mathjs": "^14.0.0",

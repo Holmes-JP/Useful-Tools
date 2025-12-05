@@ -164,21 +164,21 @@ export default function GeneratorsPanel({ view }: { view?: GeneratorView }) {
         setPasswords(generated);
     }
 
-    function arrayBufferToHex(buffer: ArrayBuffer) {
-        const bytes = new Uint8Array(buffer);
+    function arrayBufferToHex(buffer: ArrayBuffer | ArrayBufferLike) {
+        const bytes = new Uint8Array(buffer as ArrayBuffer);
         return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
     }
 
-    function arrayBufferToBase64(buffer: ArrayBuffer) {
-        const bytes = new Uint8Array(buffer);
+    function arrayBufferToBase64(buffer: ArrayBuffer | ArrayBufferLike) {
+        const bytes = new Uint8Array(buffer as ArrayBuffer);
         let binary = '';
         for (let i = 0; i < bytes.length; i += 0x8000) {
-            binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+            binary += String.fromCharCode(...Array.from(bytes.subarray(i, i + 0x8000)));
         }
         return btoa(binary);
     }
 
-    function toPem(buffer: ArrayBuffer, label: string) {
+    function toPem(buffer: ArrayBuffer | ArrayBufferLike, label: string) {
         const base64 = arrayBufferToBase64(buffer);
         const wrapped = base64.match(/.{1,64}/g)?.join('\n') ?? base64;
         return `-----BEGIN ${label}-----\n${wrapped}\n-----END ${label}-----`;
@@ -189,8 +189,8 @@ export default function GeneratorsPanel({ view }: { view?: GeneratorView }) {
     }
 
     function encodeBytes(bytes: Uint8Array, enc: Encoding | 'hex' | 'base64') {
-        if (enc === 'hex') return arrayBufferToHex(bytes);
-        if (enc === 'base64') return arrayBufferToBase64(bytes);
+        if (enc === 'hex') return arrayBufferToHex(bytes.buffer);
+        if (enc === 'base64') return arrayBufferToBase64(bytes.buffer);
         return new TextDecoder().decode(bytes);
     }
 
@@ -391,13 +391,13 @@ export default function GeneratorsPanel({ view }: { view?: GeneratorView }) {
 
             if (aesMode === 'GCM') {
                 const algo = { name: 'AES-GCM', iv, additionalData: aesAad ? decodeInput(aesAad, aesAadEnc) || undefined : undefined, tagLength: 128 } as AesGcmParams;
-                const key = await crypto.subtle.importKey('raw', keyBytes, { name: 'AES-GCM', length: keyBytes.length * 8 }, false, [aesDirection === 'encrypt' ? 'encrypt' : 'decrypt']);
+                const key = await crypto.subtle.importKey('raw', keyBytes as any, { name: 'AES-GCM', length: keyBytes.length * 8 }, false, [aesDirection === 'encrypt' ? 'encrypt' : 'decrypt']);
 
                 if (aesDirection === 'encrypt') {
-                    const cipherBuf = await crypto.subtle.encrypt(algo, key, dataBytes);
+                    const cipherBuf = await crypto.subtle.encrypt(algo, key, dataBytes as any);
                     const outBytes = new Uint8Array(cipherBuf);
-                    const tagBytes = outBytes.slice(outBytes.length - 16);
-                    const ctBytes = outBytes.slice(0, outBytes.length - 16);
+                    const tagBytes = new Uint8Array(outBytes.slice(outBytes.length - 16));
+                    const ctBytes = new Uint8Array(outBytes.slice(0, outBytes.length - 16));
                     const encForCipher = aesOutputEnc === 'utf8' ? 'base64' : aesOutputEnc;
                     setAesOutput(encodeBytes(ctBytes, encForCipher));
                     setAesTag(encodeBytes(tagBytes, aesTagEnc));
@@ -410,7 +410,7 @@ export default function GeneratorsPanel({ view }: { view?: GeneratorView }) {
                     const combined = new Uint8Array(dataBytes.length + tagBytes.length);
                     combined.set(dataBytes, 0);
                     combined.set(tagBytes, dataBytes.length);
-                    const plainBuf = await crypto.subtle.decrypt(algo, key, combined);
+                    const plainBuf = await crypto.subtle.decrypt(algo, key, combined as any);
                     setAesOutput(encodeBytes(new Uint8Array(plainBuf), aesOutputEnc));
                 }
                 return;
@@ -465,8 +465,8 @@ export default function GeneratorsPanel({ view }: { view?: GeneratorView }) {
         }
         const algo = hmacAlgo as 'SHA-1' | 'SHA-256' | 'SHA-384' | 'SHA-512';
         try {
-            const key = await crypto.subtle.importKey('raw', keyBytes, { name: 'HMAC', hash: algo }, false, ['sign']);
-            const sig = new Uint8Array(await crypto.subtle.sign('HMAC', key, msg));
+            const key = await crypto.subtle.importKey('raw', keyBytes as any, { name: 'HMAC', hash: algo }, false, ['sign']);
+            const sig = new Uint8Array(await crypto.subtle.sign('HMAC', key, msg as any));
             const hex = encodeBytes(sig, 'hex');
             const b64 = encodeBytes(sig, 'base64');
             setHmacResultHex(hex);
@@ -816,7 +816,12 @@ export default function GeneratorsPanel({ view }: { view?: GeneratorView }) {
                                                 name="aes-direction"
                                                 value="encrypt"
                                                 checked={aesDirection === 'encrypt'}
-                                                onChange={() => handleAesDirectionChange('encrypt')}
+                                                onChange={() => {
+                                                    setAesDirection('encrypt');
+                                                    setAesInput('');
+                                                    setAesOutput('');
+                                                    setAesError(null);
+                                                }}
                                             />
                                             Encrypt
                                         </label>
@@ -826,7 +831,12 @@ export default function GeneratorsPanel({ view }: { view?: GeneratorView }) {
                                                 name="aes-direction"
                                                 value="decrypt"
                                                 checked={aesDirection === 'decrypt'}
-                                                onChange={() => handleAesDirectionChange('decrypt')}
+                                                onChange={() => {
+                                                    setAesDirection('decrypt');
+                                                    setAesInput('');
+                                                    setAesOutput('');
+                                                    setAesError(null);
+                                                }}
                                             />
                                             Decrypt
                                         </label>
